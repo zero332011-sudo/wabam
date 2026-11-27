@@ -5,7 +5,7 @@ import { getTargetJid } from '../utils/helpers.js';
 export async function gamesCommand(sock, m, text) {
   const parts = text.trim().split(/\s+/);
   const cmd = parts[0];
-  if (cmd === '.خمن') return startGuess(sock, m);
+  if (cmd === '.خمن') return startGuess(sock, m, getTargetJid(m));
   if (cmd === '.xo' || cmd === '.اكس') return startXO(sock, m, getTargetJid(m));
   if (cmd === '.انهاء') {
     if (await stopGuess(sock, m)) return true;
