@@ -18,7 +18,6 @@ function logLine(line) {
   const match = value.match(/رمز ربط واتساب:\s*([A-Z0-9-]+)/i);
   if (match && chatIdForCode) pairingNotifier(chatIdForCode, match[1]).catch(err => console.error(err));
 }
-
 function pipeLines(stream) {
   let pending = '';
   stream.setEncoding('utf8');
@@ -30,7 +29,6 @@ function pipeLines(stream) {
   });
   stream.on('end', () => { if (pending) logLine(pending); });
 }
-
 export function setPairingNotifier(fn) { pairingNotifier = fn; }
 export function getStatus() {
   return { running: Boolean(child && child.exitCode === null), pid: child?.pid || null, number: lastNumber };
@@ -44,7 +42,9 @@ export async function startWhatsApp(number, chatId, config) {
   const botDir = path.join(root, 'whatsapp-bot');
   const entry = path.join(botDir, 'index.js');
   const dataDir = path.resolve(config.dataDir, 'whatsapp');
+  const sharedDir = path.resolve(config.dataDir, 'shared');
   await mkdir(dataDir, { recursive: true });
+  await mkdir(sharedDir, { recursive: true });
   lastNumber = digits;
   chatIdForCode = chatId;
   logs = [];
@@ -55,7 +55,8 @@ export async function startWhatsApp(number, chatId, config) {
       PAIRING_NUMBER: digits,
       OWNER_NUMBER: config.whatsappOwnerNumber || digits,
       DATA_DIR: dataDir,
-      MEDIA_DIR: path.join(dataDir, 'anime', 'media')
+      MEDIA_DIR: path.join(dataDir, 'anime', 'media'),
+      ANIME_LIBRARY_FILE: path.join(sharedDir, 'anime-library.json')
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -68,7 +69,6 @@ export async function startWhatsApp(number, chatId, config) {
   });
   logLine('تم بدء عملية واتساب. انتظر رمز الربط.');
 }
-
 export function stopWhatsApp() {
   if (!child || child.exitCode !== null) { child = null; return false; }
   const running = child;
@@ -77,7 +77,6 @@ export function stopWhatsApp() {
   timer.unref();
   return true;
 }
-
 export async function restartWhatsApp(config) {
   if (!lastNumber) throw new Error('لا يوجد رقم واتساب محفوظ لإعادة التشغيل.');
   const number = lastNumber;
