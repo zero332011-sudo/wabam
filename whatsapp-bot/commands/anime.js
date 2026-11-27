@@ -92,11 +92,12 @@ export async function animeCommand(sock, m, text) {
   }
   if (cmd === '.حلقات' || cmd === '.حلقه') {
     const [anime, section, episodeNo] = parsePair(parts.slice(1).join(' '));
-    const episodes = getEpisodes(getTargetLibrary()[anime]?.sections?.[section] ?? db.anime[anime]?.sections?.[section]);
-    if (!episodes) {
+    const sectionRecord = getTargetLibrary()[anime]?.sections?.[section] ?? db.anime[anime]?.sections?.[section];
+    if (!sectionRecord) {
       await sock.sendMessage(jid, { text: '❌ الأنمي أو القسم غير موجود. الصيغة: .حلقات اسم الأنمي|اسم القسم' });
       return true;
     }
+    const episodes = getEpisodes(sectionRecord);
     if (cmd === '.حلقات') {
       const list = episodes.map(e => typeof e === 'string' ? path.basename(e) : 'الحلقة ' + e.number).join('\n');
       await sock.sendMessage(jid, { text: list ? '📺 حلقات ' + anime + ' - ' + section + '\n' + list : 'لا توجد حلقات مضافة لهذا القسم.' });
