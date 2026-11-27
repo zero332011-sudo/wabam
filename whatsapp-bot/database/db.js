@@ -23,7 +23,7 @@ function normalize(data = {}) {
   if (Number(data.schemaVersion || 1) < 2) {
     for (const user of Object.values(users)) {
       const oldRank = Number(user?.rank);
-      if (Number.isInteger(oldRank) && oldRank >= 0 && oldRank <= 17) user.rank = 20 - oldRank;
+      if (Number.isInteger(oldRank) && oldRank >= 0 && oldRank <= 17) user.rank = oldRank === 17 ? 1 : oldRank === 16 ? 2 : 20 - oldRank;
       else user.rank = 1;
     }
   }
@@ -73,7 +73,7 @@ export function getUser(jid) {
     if (normalizedOwner.startsWith('0020')) normalizedOwner = normalizedOwner.slice(2);
     else if (normalizedOwner.startsWith('0')) normalizedOwner = '20' + normalizedOwner.slice(1);
     else if (normalizedOwner && !normalizedOwner.startsWith('20')) normalizedOwner = '20' + normalizedOwner;
-    const owner = !!normalizedOwner && numberOf(jid) === normalizedOwner;
+    const owner = (!!normalizedOwner && numberOf(jid) === normalizedOwner) || (db.ownerJids || []).includes(jid);
     const developer = owner || db.developers.some(x => numberOf(x) === numberOf(jid));
     db.users[jid] = {
       jid, nickname: 'عضو جديد', rank: owner ? 20 : developer ? 17 : 1,
