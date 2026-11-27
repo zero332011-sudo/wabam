@@ -49,7 +49,7 @@ export async function generalCommand(sock, m, text) {
   const db = getDB();
   const botName = db.botName || config.name;
 
-  if (['.رئيسية', '.اكتب الأوامر', '.اكتب_الأوامر', '.الاوامر', '.اوامر'].includes(trimmed)) {
+  if (['.رئيسية', '.رئيسيه', '.اكتب الأوامر', '.اكتب_الأوامر', '.الاوامر', '.اوامر'].includes(trimmed)) {
     await sock.sendMessage(jid, { text: mainMenu(botName) });
     return true;
   }
