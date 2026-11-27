@@ -85,20 +85,38 @@ async function nextRound(sock, jid, game) {
   }, ROUND_MS);
 }
 
-export async function startGuess(sock, m) {
+export async function startGuess(sock, m, opponent) {
   const jid = m.key.remoteJid;
   if (!jid.endsWith('@g.us')) { await sock.sendMessage(jid, { text: '🎯 لعبة خمن متاحة في المجموعات فقط.' }); return true; }
-  if (games.has(jid)) { await sock.sendMessage(jid, { text: '🎯 توجد لعبة خمن جارية بالفعل. اكتب تم للمشاركة.' }); return true; }
+  if (games.has(jid)) { await sock.sendMessage(jid, { text: '🎯 توجد دعوة أو لعبة خمن جارية بالفعل.' }); return true; }
   const owner = m.key.participant || jid;
-  const game = { owner, participants: new Set([owner]), eliminated: new Set(), everHadOpponent: false, hearts: { [owner]: HEARTS }, used: new Set(), round: 0, answer: new Set(), timer: null, resolving: false };
+  if (!opponent || opponent === owner) {
+    await sock.sendMessage(jid, { text: '🎯 لتحدي عضو، اكتب .خمن مع منشنه أو بالرد على رسالته.\n✋ العضو المتحدّى يكتب «تم» لقبول التحدي وبدء اللعبة.' });
+    return true;
+  }
+  const game = { owner, invited: opponent, active: false, participants: new Set([owner]), eliminated: new Set(), everHadOpponent: false, hearts: { [owner]: HEARTS }, used: new Set(), round: 0, answer: new Set(), timer: null, resolving: false };
   games.set(jid, game);
-  await nextRound(sock, jid, game);
+  await sock.sendMessage(jid, {
+    text: `🎯 تحدي لعبة خمن\n👤 المتحدّي: @${owner.split('@')[0]}\n⚔️ التحدي موجّه إلى: @${opponent.split('@')[0]}\n✋ لقبول التحدي وبدء اللعبة، اكتب «تم».`,
+    mentions: [owner, opponent]
+  });
   return true;
 }
 
 export async function guessMessage(sock, m, text) {
   const jid = m.key.remoteJid, game = games.get(jid), who = m.key.participant || jid;
   if (!game || !text || text.startsWith('.')) return false;
+  if (!game.active) {
+    if (text.trim() !== 'تم') return false;
+    if (who !== game.invited) return false;
+    game.participants.add(who);
+    game.hearts[who] = HEARTS;
+    game.everHadOpponent = true;
+    game.active = true;
+    await sock.sendMessage(jid, { text: `✅ @${who.split('@')[0]} قبل التحدي!\n🚀 بدأت لعبة خمن.`, mentions: [who] });
+    await nextRound(sock, jid, game);
+    return true;
+  }
   if (game.resolving) return true;
   if (text.trim() === 'تم') {
     if (!game.participants.has(who)) {
