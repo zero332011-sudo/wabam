@@ -6,7 +6,7 @@ const dir = path.join(dataRoot, 'database');
 const file = path.join(dir, 'data.json');
 const defaults = () => ({
   schemaVersion: 2,
-  users: {}, groups: {}, developers: [], ownerJids: [], botName: '', messageStats: {},
+  users: {}, groups: {}, developers: [], ownerJids: [], botName: '', messageStats: {}, welcomedPrivate: [],
   communityAwards: { lastDailyRun: '', lastWeeklyRun: '', dailySent: {}, weeklySent: {} },
   muted: {}, blockedWords: [], blockedEmojis: [], blockedStickers: [], anime: {},
   games: {}, marriages: {}, transfers: []
@@ -31,7 +31,7 @@ function normalize(data = {}) {
     ...base, ...data, schemaVersion: 2,
     users, groups: data.groups || {},
     developers: data.developers || [], ownerJids: data.ownerJids || [],
-    botName: data.botName || '', messageStats: data.messageStats || {},
+    botName: data.botName || '', messageStats: data.messageStats || {}, welcomedPrivate: data.welcomedPrivate || [],
     communityAwards: { ...base.communityAwards, ...(data.communityAwards || {}) },
     muted: data.muted || {}, anime: data.anime || {}, games: data.games || {},
     blockedWords: data.blockedWords || [], blockedEmojis: data.blockedEmojis || [],

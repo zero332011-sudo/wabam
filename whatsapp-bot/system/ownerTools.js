@@ -1,12 +1,12 @@
 import { getDB, saveDB } from '../database/db.js';
-import { isOwner, isBotManager } from '../utils/permissions.js';
+import { isOwner, isBotManager, isDeveloper } from '../utils/permissions.js';
 
 export async function ownerTools(sock, m, text) {
   const jid = m.key.remoteJid, sender = m.key.participant || jid;
   const trimmed = text.trim();
   const rename = trimmed.startsWith('.اسم');
   if (rename) {
-    if (!isOwner(sender)) {
+    if (!isDeveloper(sender)) {
       await sock.sendMessage(jid, { text: '⛔ تغيير اسم البوت للمطور الأساسي فقط.' });
       return true;
     }

@@ -27,6 +27,26 @@ export async function messageHandler(sock, update) {
     rememberOwnerIdentity(m);
 
     try {
+      // Send the private welcome message once per direct chat.
+      if (!jid.endsWith('@g.us') && !jid.endsWith('@broadcast') &&
+          (jid.endsWith('@s.whatsapp.net') || jid.endsWith('@lid'))) {
+        const privateDb = getDB();
+        const privateSender = m.key.participant || jid;
+        privateDb.welcomedPrivate ||= [];
+        if (!privateDb.welcomedPrivate.includes(privateSender)) {
+          privateDb.welcomedPrivate.push(privateSender);
+          saveDB(privateDb);
+          await sock.sendMessage(jid, {
+            text: `🌌 أهلاً بك في WABAM!
+
+مرحبًا بك 👋
+للاستفسارات أو التواصل مع إدارة البوت:
+📞 ${process.env.CONTACT_NUMBER || '01032219184'}
+
+نتمنى لك تجربة ممتعة مع WABAM 🍥`
+          });
+        }
+      }
       const db = getDB();
       if (jid.endsWith('@g.us')) {
         const sender = m.key.participant || jid;
@@ -51,7 +71,7 @@ export async function messageHandler(sock, update) {
         const oldWeeks = Object.keys(stats.weekly).sort();
         while (oldWeeks.length > 3) delete stats.weekly[oldWeeks.shift()];
 
-        if (!db.groups[jid]) db.groups[jid] = { prayerEnabled: false };
+        if (!db.groups[jid]) db.groups[jid] = { prayerEnabled: true };
         saveDB(db);
       }
 

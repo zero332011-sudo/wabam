@@ -1,8 +1,11 @@
 import { getDB } from '../database/db.js';
 import { config } from '../config/settings.js';
-import { lockGroupForPrayer } from './groupLock.js';
 
 const sent = new Set();
+function formatClock(value) {
+  const [h, m] = String(value).split(':').map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'مساءً' : 'صباحًا'}`;
+}
 const names = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 const timingsUrl = new URL('https://api.aladhan.com/v1/timingsByCity');
 timingsUrl.search = new URLSearchParams({
@@ -44,17 +47,15 @@ export async function checkPrayer(sock) {
     const sentKey = date + (prayer?.[0] || '');
     if (!prayer || sent.has(sentKey)) return;
     const db = getDB();
-    for (const [jid, settings] of Object.entries(db.groups)) {
-      if (!settings.prayerEnabled) continue;
+    for (const [jid] of Object.entries(db.groups)) {
       try {
         const meta = await sock.groupMetadata(jid);
         const mentions = meta.participants.map(x => x.id);
         await sock.sendMessage(jid, {
-          text: '🕌 حان الآن موعد صلاة ' + prayer[1] + ' بتوقيت ' + config.prayerCity + '. تقبل الله منكم.\n' +
+          text: '🕌 حان الآن موعد صلاة ' + prayer[1] + ' بتوقيت ' + config.prayerCityLabel + '، الساعة ' + formatClock(now) + '. تقبل الله منكم.\n' +
             mentions.map(x => '@' + x.split('@')[0]).join(' '),
           mentions
         });
-        await lockGroupForPrayer(sock, jid);
       } catch (error) {
         console.error('Prayer group:', jid, error?.message || error);
       }
