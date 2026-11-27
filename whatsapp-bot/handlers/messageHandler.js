@@ -51,7 +51,7 @@ export async function messageHandler(sock, update) {
         const oldWeeks = Object.keys(stats.weekly).sort();
         while (oldWeeks.length > 3) delete stats.weekly[oldWeeks.shift()];
 
-        if (!db.groups[jid]) db.groups[jid] = { prayerEnabled: false };
+        if (!db.groups[jid]) db.groups[jid] = { prayerEnabled: true };
         saveDB(db);
       }
 
