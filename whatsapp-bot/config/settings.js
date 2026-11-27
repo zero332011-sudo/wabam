@@ -13,10 +13,13 @@ function normalizeEgyptianNumber(value) {
 
 export const config = {
   name: process.env.BOT_NAME || 'WABAM',
+  developerId: String(process.env.DEVELOPER_ID || '69033026138303').replace(/\\D/g, ''),
+  contactNumber: process.env.CONTACT_NUMBER || '01032219184',
   owner: normalizeEgyptianNumber(process.env.OWNER_NUMBER),
   pairingNumber: normalizeEgyptianNumber(process.env.PAIRING_NUMBER),
   timezone: process.env.TIMEZONE || 'Africa/Cairo',
   prayerCity: process.env.PRAYER_CITY || 'Sohag',
+  prayerCityLabel: 'سوهاج',
   prayerCountry: process.env.PRAYER_COUNTRY || 'Egypt',
   prefix: '.'
 };
