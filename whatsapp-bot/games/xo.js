@@ -16,7 +16,7 @@ const renderBoard = board => [
   '┣━━━━━━━━╋━━━━━━━━╋━━━━━━━━┫',
   `┃   ${board[6]}   ┃   ${board[7]}   ┃   ${board[8]}   ┃`,
   '┗━━━━━━━━┻━━━━━━━━┻━━━━━━━━┛'
-].join('\\n');
+].join('\n');
 
 const arenaMessage = (game, status) => [
   '🎮 حلبة لعبة XO',
@@ -26,7 +26,7 @@ const arenaMessage = (game, status) => [
   `❌ ${mention(game.owner)}`,
   `⭕ ${mention(game.invited)}`,
   status
-].join('\\n');
+].join('\n');
 
 const gameMentions = game => [game.owner, game.invited].filter(Boolean);
 
