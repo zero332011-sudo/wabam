@@ -219,59 +219,7 @@ export async function generalCommand(sock, m, text) {
     const infinite = developer;
     const caption = `👤 بطاقة العضو\n━━━━━━━━━━━━━━\n🏷️ اللقب: ${user.nickname}\n📱 الرقم/المعرف: ${target.split('@')[0]}\n👑 الرتبة: ${rank} (${developer ? 20 : user.rank}/20)\n⭐ XP: ${user.xp || 0}\n━━━━━━━━━━━━━━\n🏦 البنك: ${infinite ? '∞' : user.bank} ج\n💵 المحفظة: ${infinite ? '∞' : user.wallet} ج`;
 
-    // LID accounts may require the participant's phone-number alias.
-    const candidates = new Set([
-      target, sender, m.key.participant, m.key.participantPn, m.key.participantAlt,
-      m.key.remoteJid
-    ].filter(Boolean));
-    const digits = value => String(value || '').split('@')[0].split(':')[0].replace(/\D/g, '');
-    if (jid.endsWith('@g.us')) {
-      try {
-        const metadata = await sock.groupMetadata(jid);
-        const targetDigits = digits(target);
-        const senderDigits = digits(sender);
-        const participant = (metadata.participants || []).find(p => {
-          const ids = [p.id, p.lid, p.phoneNumber, p.jid, p.phoneNumberJid].filter(Boolean);
-          return ids.includes(target) || ids.includes(sender) ||
-            (targetDigits && ids.some(value => digits(value) === targetDigits)) ||
-            (senderDigits && ids.some(value => digits(value) === senderDigits));
-        });
-        if (participant) {
-          for (const value of [
-            participant.id, participant.lid, participant.phoneNumber,
-            participant.jid, participant.phoneNumberJid
-          ]) {
-            if (!value) continue;
-            const candidate = String(value).includes('@') ? String(value) : String(value) + '@s.whatsapp.net';
-            candidates.add(candidate);
-          }
-        }
-      } catch (error) {
-        console.error('Group participant lookup:', error?.message || error);
-      }
-    }
-
-    let picture = null;
-    for (const candidate of candidates) {
-      if (!candidate || !String(candidate).includes('@') || String(candidate).endsWith('@g.us')) continue;
-      try {
-        picture = await sock.profilePictureUrl(candidate, 'image');
-        if (picture) break;
-      } catch {}
-    }
-    if (picture) {
-      try {
-        const response = await fetch(picture);
-        if (!response.ok) throw new Error('Profile picture download failed: ' + response.status);
-        const image = Buffer.from(await response.arrayBuffer());
-        await sock.sendMessage(jid, { image, caption, mentions: [target] });
-      } catch (error) {
-        console.error('Profile picture send:', error?.message || error);
-        await sock.sendMessage(jid, { text: caption, mentions: [target] });
-      }
-    } else {
-      await sock.sendMessage(jid, { text: caption, mentions: [target] });
-    }
+    await sock.sendMessage(jid, { text: caption, mentions: [target] });
     return true;
   }
 

@@ -47,13 +47,22 @@ export async function checkPrayer(sock) {
     const sentKey = date + (prayer?.[0] || '');
     if (!prayer || sent.has(sentKey)) return;
     const db = getDB();
-    for (const [jid] of Object.entries(db.groups)) {
+    for (const [jid, group] of Object.entries(db.groups)) {
+      if (group?.prayerEnabled === false) continue;
       try {
         const meta = await sock.groupMetadata(jid);
-        const mentions = meta.participants.map(x => x.id);
+        const members = (meta.participants || []).map(x => x.id).filter(Boolean);
+        if (!members.length) continue;
+        const mentions = members.flatMap(id => [id, id, id]);
+        const mentionLine = members.map(id => '@' + id.split('@')[0]).join(' ');
         await sock.sendMessage(jid, {
-          text: '🕌 حان الآن موعد صلاة ' + prayer[1] + ' بتوقيت ' + config.prayerCityLabel + '، الساعة ' + formatClock(now) + '. تقبل الله منكم.\n' +
-            mentions.map(x => '@' + x.split('@')[0]).join(' '),
+          text: [
+            '🕌 حان الآن موعد صلاة ' + prayer[1] + ' بتوقيت ' + config.prayerCityLabel + '، الساعة ' + formatClock(now) + '. تقبل الله منكم.',
+            '',
+            mentionLine,
+            mentionLine,
+            mentionLine
+          ].join('\n'),
           mentions
         });
       } catch (error) {
