@@ -21,6 +21,33 @@ function writeLibrary(value) {
   fs.renameSync(libraryFile + '.tmp', libraryFile);
 }
 function entries(obj) { return Object.entries(obj || {}); }
+function getEpisodes(section) {
+  if (Array.isArray(section)) return section;
+  return Array.isArray(section?.episodes) ? section.episodes : [];
+}
+function normalizeSection(section) {
+  if (Array.isArray(section)) return { image: null, episodes: section };
+  return { ...(section || {}), image: section?.image || null, episodes: getEpisodes(section) };
+}
+function extractTelegramMedia(message) {
+  if (message?.photo?.length) {
+    const photo = message.photo[message.photo.length - 1];
+    return { type: 'photo', fileId: photo.file_id, fileUniqueId: photo.file_unique_id };
+  }
+  for (const type of ['video', 'document', 'audio', 'animation', 'voice']) {
+    const item = message?.[type];
+    if (item?.file_id) return { type, fileId: item.file_id, fileUniqueId: item.file_unique_id, mimeType: item.mime_type || '', fileName: item.file_name || '' };
+  }
+  return null;
+}
+async function sendTelegramMedia(ctx, media, caption) {
+  if (!media?.fileId) throw new Error('ملف الوسائط غير موجود.');
+  if (media.type === 'photo') return ctx.replyWithPhoto(media.fileId, { caption });
+  if (media.type === 'video') return ctx.replyWithVideo(media.fileId, { caption });
+  if (media.type === 'animation') return ctx.replyWithAnimation(media.fileId, { caption });
+  if (media.type === 'audio' || media.type === 'voice') return ctx.replyWithAudio(media.fileId, { caption });
+  return ctx.replyWithDocument(media.fileId, { caption });
+}
 const ownerOnly = ctx => ctx.from?.id === config.ownerId;
 const mainKeyboard = () => new InlineKeyboard()
   .text('🍥 مكتبة الأنمي', 'library:home').row()
@@ -36,10 +63,9 @@ const whatsappKeyboard = () => new InlineKeyboard()
   .text('⏹ إيقاف', 'wa:stop').text('🔄 إعادة تشغيل', 'wa:restart').row()
   .text('↩️ لوحة الإدارة', 'admin:home');
 const animeAdminKeyboard = () => new InlineKeyboard()
-  .text('➕ إضافة أنمي', 'anime:add').row()
-  .text('📁 إضافة قسم', 'anime:section').row()
-  .text('🎬 إضافة حلقة برابط', 'anime:episode').row()
-  .text('🔗 تعديل رابط حلقة', 'anime:edit').row()
+  .text('➕ إضافة أنمي + صورة', 'anime:add').row()
+  .text('📁 إضافة قسم + صورة', 'anime:section').row()
+  .text('🎬 إضافة حلقة بوسائط', 'anime:episode').row()
   .text('🗑️ حذف أنمي', 'anime:delete').row()
   .text('↩️ لوحة الإدارة', 'admin:home');
 const ownerDeny = async ctx => {
@@ -71,90 +97,120 @@ async function showAnime(ctx, animeIndex) {
   const kb = new InlineKeyboard();
   sections.forEach(([name], i) => kb.text('📁 ' + name, 'lib:s:' + animeIndex + ':' + i).row());
   kb.text('↩️ مكتبة الأنمي', 'library:home');
-  await ctx.reply('🍥 ' + anime[0] + '\nاختر القسم:', { reply_markup: kb });
+  const caption = '🍥 ' + anime[0] + '\nاختر القسم:';
+  if (anime[1].image?.fileId) return ctx.replyWithPhoto(anime[1].image.fileId, { caption, reply_markup: kb });
+  return ctx.reply(caption, { reply_markup: kb });
 }
 async function showSection(ctx, animeIndex, sectionIndex) {
   const anime = entries(readLibrary())[animeIndex];
   const section = anime && entries(anime[1].sections)[sectionIndex];
   if (!section) return ctx.reply('❌ القسم غير موجود.');
-  const episodes = Array.isArray(section[1]) ? section[1] : [];
-  if (!episodes.length) return ctx.reply('🎬 لا توجد حلقات في هذا القسم.');
+  const data = normalizeSection(section[1]);
+  if (!data.episodes.length) return ctx.reply('🎬 لا توجد حلقات في هذا القسم.');
   const kb = new InlineKeyboard();
-  episodes.forEach((episode, i) => kb.text('▶️ الحلقة ' + episode.number, 'lib:e:' + animeIndex + ':' + sectionIndex + ':' + i).row());
+  data.episodes.forEach((episode, i) => kb.text('▶️ الحلقة ' + episode.number, 'lib:e:' + animeIndex + ':' + sectionIndex + ':' + i).row());
   kb.text('↩️ الأقسام', 'lib:a:' + animeIndex);
-  await ctx.reply('📺 ' + anime[0] + ' — ' + section[0] + '\nاختر رقم الحلقة:', { reply_markup: kb });
+  const caption = '📺 ' + anime[0] + ' — ' + section[0] + '\nاختر رقم الحلقة:';
+  if (data.image?.fileId) return ctx.replyWithPhoto(data.image.fileId, { caption, reply_markup: kb });
+  return ctx.reply(caption, { reply_markup: kb });
 }
 async function sendEpisode(ctx, animeIndex, sectionIndex, episodeIndex) {
   const anime = entries(readLibrary())[animeIndex];
   const section = anime && entries(anime[1].sections)[sectionIndex];
-  const episode = section && section[1][episodeIndex];
+  const data = section && normalizeSection(section[1]);
+  const episode = data && data.episodes[episodeIndex];
   if (!episode) return ctx.reply('❌ الحلقة غير متاحة.');
-  if (!/^https?:\/\//i.test(String(episode.url || ''))) return ctx.reply('⚠️ رابط الحلقة غير صالح أو غير متاح.');
-  await ctx.replyWithVideo(episode.url, { caption: '🍥 ' + anime[0] + ' — ' + section[0] + '\n🎬 الحلقة ' + episode.number });
+  const caption = '🍥 ' + anime[0] + ' — ' + section[0] + '\n🎬 الحلقة ' + episode.number;
+  if (episode.media?.fileId) return sendTelegramMedia(ctx, episode.media, caption);
+  if (/^https?:\/\//i.test(String(episode.url || ''))) return ctx.replyWithVideo(episode.url, { caption });
+  return ctx.reply('⚠️ الحلقة لا تحتوي على ملف وسائط.');
 }
 async function requestInput(ctx, type, prompt) {
   if (!ownerOnly(ctx)) return ownerDeny(ctx);
-  pendingInput.set(ctx.from.id, type);
+  pendingInput.set(ctx.from.id, { step: type });
   await ctx.reply(prompt + '\n\nأرسل البيانات في رسالة واحدة. اكتب /cancel للإلغاء.');
 }
 async function showAnimeAdmin(ctx) {
   if (!ownerOnly(ctx)) return ownerDeny(ctx);
-  await ctx.reply('🍥 إدارة مكتبة الأنمي\nيمكنك إضافة الأنميات والأقسام والحلقات، وتعديل روابط الحلقات.', { reply_markup: animeAdminKeyboard() });
+  await ctx.reply('🍥 إدارة مكتبة الأنمي\nكل أنمي وقسم له صورة، والحلقات تُحفظ كوسائط فعلية وليس كرابط.', { reply_markup: animeAdminKeyboard() });
 }
 async function handleAdminInput(ctx, value) {
-  const type = pendingInput.get(ctx.from.id);
-  if (!type) return false;
+  const state = pendingInput.get(ctx.from.id);
+  if (!state) return false;
   if (value === '/cancel') {
     pendingInput.delete(ctx.from.id);
-    await ctx.reply('تم إلغاء العملية.');
+    await ctx.reply('↩️ تم إلغاء العملية.');
     return true;
   }
   const library = readLibrary();
   const fields = value.split('|').map(x => x.trim());
-  if (type === 'anime') {
+  if (state.step === 'anime-name') {
     const name = value.trim();
     if (!name || name.length > 80) return ctx.reply('❌ اكتب اسم أنمي صحيحًا لا يتجاوز 80 حرفًا.');
-    library[name] ||= { sections: {} };
-    writeLibrary(library);
-    pendingInput.delete(ctx.from.id);
-    await ctx.reply('✅ تمت إضافة الأنمي: ' + name, { reply_markup: animeAdminKeyboard() });
-    return true;
+    pendingInput.set(ctx.from.id, { step: 'anime-photo', name });
+    return ctx.reply('🖼️ ابعت صورة الأنمي الآن كصورة.');
   }
-  if (type === 'section') {
+  if (state.step === 'section-details') {
     const [animeName, sectionName] = fields;
-    if (!animeName || !sectionName || !library[animeName]) return ctx.reply('❌ الصيغة: اسم الأنمي | اسم القسم\nوتأكد أن الأنمي موجود.');
-    library[animeName].sections ||= {};
-    library[animeName].sections[sectionName] ||= [];
-    writeLibrary(library);
-    pendingInput.delete(ctx.from.id);
-    await ctx.reply('✅ تمت إضافة القسم ' + sectionName + ' داخل ' + animeName + '.', { reply_markup: animeAdminKeyboard() });
-    return true;
+    if (!animeName || !sectionName || !library[animeName]) return ctx.reply('❌ الصيغة: اسم الأنمي | اسم القسم، وتأكد أن الأنمي موجود.');
+    pendingInput.set(ctx.from.id, { step: 'section-photo', animeName, sectionName });
+    return ctx.reply('🖼️ ابعت صورة القسم الآن.');
   }
-  if (type === 'episode' || type === 'edit') {
-    const [animeName, sectionName, episodeNo, url] = fields;
-    const episodes = library[animeName]?.sections?.[sectionName];
-    if (!episodes || !episodeNo || !/^https?:\/\//i.test(url || '')) {
-      return ctx.reply('❌ الصيغة: اسم الأنمي | اسم القسم | رقم الحلقة | رابط فيديو مباشر');
-    }
-    const index = episodes.findIndex(x => String(x.number) === episodeNo);
-    const item = { number: episodeNo, url };
-    if (index >= 0) episodes[index] = item;
-    else if (type === 'episode') episodes.push(item);
-    else return ctx.reply('❌ الحلقة غير موجودة. استخدم إضافة حلقة أولًا.');
-    episodes.sort((a, b) => Number(a.number) - Number(b.number));
-    writeLibrary(library);
-    pendingInput.delete(ctx.from.id);
-    await ctx.reply('✅ تم ' + (type === 'edit' ? 'تحديث رابط' : 'إضافة') + ' الحلقة ' + episodeNo + '.', { reply_markup: animeAdminKeyboard() });
-    return true;
+  if (state.step === 'episode-details') {
+    const [animeName, sectionName, episodeNo] = fields;
+    const section = library[animeName]?.sections?.[sectionName];
+    if (!section || !episodeNo) return ctx.reply('❌ الصيغة: اسم الأنمي | اسم القسم | رقم الحلقة، وتأكد من وجود القسم.');
+    pendingInput.set(ctx.from.id, { step: 'episode-media', animeName, sectionName, episodeNo });
+    return ctx.reply('🎬 ابعت ملف الحلقة الآن: فيديو أو صورة أو صوت أو مستند.');
   }
-  if (type === 'delete') {
+  if (state.step === 'delete') {
     const name = value.trim();
     if (!library[name]) return ctx.reply('❌ الأنمي غير موجود.');
     delete library[name];
     writeLibrary(library);
     pendingInput.delete(ctx.from.id);
-    await ctx.reply('🗑️ تم حذف الأنمي وأقسامه وحلقاته.', { reply_markup: animeAdminKeyboard() });
-    return true;
+    return ctx.reply('🗑️ تم حذف الأنمي وأقسامه وحلقاته.', { reply_markup: animeAdminKeyboard() });
+  }
+  return false;
+}
+async function handleAdminMedia(ctx) {
+  const state = pendingInput.get(ctx.from.id);
+  if (!state) return false;
+  const media = extractTelegramMedia(ctx.message);
+  if (!media) return ctx.reply('⚠️ ابعت صورة أو فيديو أو ملف وسائط مدعوم.');
+  const library = readLibrary();
+  if (state.step === 'anime-photo') {
+    library[state.name] ||= { sections: {} };
+    library[state.name].image = media;
+    library[state.name].sections ||= {};
+    writeLibrary(library);
+    pendingInput.delete(ctx.from.id);
+    return ctx.reply('✅ تمت إضافة الأنمي وصورته: ' + state.name, { reply_markup: animeAdminKeyboard() });
+  }
+  if (state.step === 'section-photo') {
+    const anime = library[state.animeName];
+    if (!anime) return ctx.reply('❌ الأنمي لم يعد موجودًا.');
+    anime.sections ||= {};
+    const section = normalizeSection(anime.sections[state.sectionName]);
+    section.image = media;
+    anime.sections[state.sectionName] = section;
+    writeLibrary(library);
+    pendingInput.delete(ctx.from.id);
+    return ctx.reply('✅ تمت إضافة القسم وصورته: ' + state.sectionName, { reply_markup: animeAdminKeyboard() });
+  }
+  if (state.step === 'episode-media') {
+    const anime = library[state.animeName];
+    const section = anime && normalizeSection(anime.sections?.[state.sectionName]);
+    if (!section) return ctx.reply('❌ القسم لم يعد موجودًا.');
+    const episode = { number: state.episodeNo, media };
+    const index = section.episodes.findIndex(item => String(item.number) === String(state.episodeNo));
+    if (index >= 0) section.episodes[index] = episode;
+    else section.episodes.push(episode);
+    section.episodes.sort((a, b) => Number(a.number) - Number(b.number));
+    anime.sections[state.sectionName] = section;
+    writeLibrary(library);
+    pendingInput.delete(ctx.from.id);
+    return ctx.reply('✅ تم حفظ الحلقة ' + state.episodeNo + ' كوسائط فعلية.', { reply_markup: animeAdminKeyboard() });
   }
   return false;
 }
@@ -193,10 +249,10 @@ bot.callbackQuery('admin:general', async ctx => {
   await ctx.answerCallbackQuery();
   await ctx.reply('⚙️ الإدارة العامة\n• إدارة المطورين تتم من إعدادات المالك.\n• الكلمات والإيموجيات والملصقات المحظورة تدار من أوامر المطور في واتساب.\n• الجوائز والإحصائيات تعمل تلقائيًا وفق إعدادات الاستضافة.', { reply_markup: adminKeyboard() });
 });
-bot.callbackQuery('anime:add', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'anime', '➕ أرسل اسم الأنمي الجديد.'); });
-bot.callbackQuery('anime:section', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'section', '📁 أرسل: اسم الأنمي | اسم القسم'); });
-bot.callbackQuery('anime:episode', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'episode', '🎬 أرسل: اسم الأنمي | اسم القسم | رقم الحلقة | رابط فيديو مباشر'); });
-bot.callbackQuery('anime:edit', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'edit', '🔗 أرسل: اسم الأنمي | اسم القسم | رقم الحلقة | رابط الفيديو الجديد'); });
+bot.callbackQuery('anime:add', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'anime-name', '➕ أرسل اسم الأنمي الجديد.'); });
+bot.callbackQuery('anime:section', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'section-details', '📁 أرسل: اسم الأنمي | اسم القسم'); });
+bot.callbackQuery('anime:episode', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'episode-details', '🎬 أرسل: اسم الأنمي | اسم القسم | رقم الحلقة'); });
+
 bot.callbackQuery('anime:delete', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'delete', '🗑️ أرسل اسم الأنمي المراد حذفه.'); });
 
 bot.callbackQuery('wa:pair', async ctx => {
@@ -229,14 +285,19 @@ bot.callbackQuery('wa:stop', async ctx => {
   await ctx.reply(stopWhatsApp() ? '⏹ تم إرسال طلب الإيقاف.' : 'ℹ️ البوت متوقف بالفعل.', { reply_markup: whatsappKeyboard() });
 });
 
-bot.on('message:text', async ctx => {
+bot.on('message', async ctx => {
   if (!ownerOnly(ctx)) {
     if (pendingInput.has(ctx.from.id) || waitingForNumber.has(ctx.from.id)) return ownerDeny(ctx);
     return;
   }
-  if (pendingInput.has(ctx.from.id)) return handleAdminInput(ctx, ctx.message.text.trim());
+  if (pendingInput.has(ctx.from.id)) {
+    const state = pendingInput.get(ctx.from.id);
+    if (['anime-photo', 'section-photo', 'episode-media'].includes(state.step)) return handleAdminMedia(ctx);
+    if (ctx.message.text) return handleAdminInput(ctx, ctx.message.text.trim());
+    return ctx.reply('⚠️ أرسل البيانات النصية أو الوسائط المطلوبة حسب الخطوة الحالية.');
+  }
   if (!waitingForNumber.has(ctx.from.id)) return;
-  const value = ctx.message.text.trim();
+  const value = ctx.message.text?.trim() || '';
   if (!/^\+?[0-9\s()-]{10,22}$/.test(value)) return ctx.reply('❌ الرقم غير صحيح. أرسله مع مفتاح الدولة.');
   waitingForNumber.delete(ctx.from.id);
   try {
