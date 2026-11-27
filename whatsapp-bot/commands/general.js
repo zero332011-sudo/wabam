@@ -208,9 +208,11 @@ export async function generalCommand(sock, m, text) {
   if (cmd === '.معلومات') {
     const target = getTargetJid(m) || sender;
     const user = getUser(target);
-    const rank = ranks[Number(user.rank)] || 'غير محددة';
-    const infinite = isDeveloper(target);
-    const caption = `👤 بطاقة العضو\n🏷️ اللقب: ${user.nickname}\n📱 الرقم: ${target.split('@')[0]}\n👑 الرتبة: ${rank} (${user.rank}/20)\n🏦 البنك: ${infinite ? '∞' : user.bank} ج\n💵 المحفظة: ${infinite ? '∞' : user.wallet} ج\n⚠️ الإنذارات: ${user.warnings || 0}`;
+    const developer = isDeveloper(target);
+    if (developer) { user.rank = 20; db.users[target] = user; saveDB(db); }
+    const rank = developer ? 'الإمبراطور 👑' : (ranks[Number(user.rank)] || 'غير محددة');
+    const infinite = developer;
+    const caption = `👤 بطاقة العضو\n🏷️ اللقب: ${user.nickname}\n📱 الرقم/المعرف: ${target.split('@')[0]}\n👑 الرتبة: ${rank} (${developer ? 20 : user.rank}/20)\n⭐ XP: ${user.xp || 0}\n🏦 البنك: ${infinite ? '∞' : user.bank} ج\n💵 المحفظة: ${infinite ? '∞' : user.wallet} ج`;
     try {
       const url = await sock.profilePictureUrl(target, 'image');
       await sock.sendMessage(jid, { image: { url }, caption, mentions: [target] });

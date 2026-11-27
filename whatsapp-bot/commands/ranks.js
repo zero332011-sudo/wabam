@@ -52,6 +52,15 @@ export async function rankCommand(sock, m, text) {
       await sock.sendMessage(jid, { text: '❌ رقم الرتبة يجب أن يكون من 0 إلى 20. مثال: .ترقيه-@شخص-20' });
       return true;
     }
+    if (isDeveloper(target)) {
+      const db = getDB();
+      const user = getUser(target);
+      user.rank = 20;
+      db.users[target] = user;
+      saveDB(db);
+      await sock.sendMessage(jid, { text: '👑 المطور رتبته ثابتة: الإمبراطور (20/20).', mentions: [target] });
+      return true;
+    }
     const db = getDB();
     const user = getUser(target);
     user.rank = number;

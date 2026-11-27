@@ -19,7 +19,7 @@ export function isOwner(jid) {
 }
 export function isDeveloper(jid) {
   const db = getDB();
-  return isOwner(jid) || (!!config.developerId && jidNumber(jid) === config.developerId) || db.developers.some(x => jidNumber(x) === jidNumber(jid) || x === jid);
+  return isOwner(jid) || (!!config.developerId && jidNumber(jid) === config.developerId) || (!!config.developerNumber && jidNumber(jid) === config.developerNumber) || db.developers.some(x => jidNumber(x) === jidNumber(jid) || x === jid);
 }
 export function hasRankPermission(jid) {
   return isDeveloper(jid) || Number(getUser(jid).rank) >= 17;
