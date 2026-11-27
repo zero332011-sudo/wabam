@@ -123,7 +123,13 @@ export async function generalCommand(sock, m, text) {
     await sock.sendMessage(jid, { text: '🟢 البوت يعمل\n⏱️ مدة التشغيل: ' + Math.floor(process.uptime()) + ' ثانية' });
     return true;
   }
-  if (cmd === '.عرض') return showMedia(sock, m);
+  if (cmd === '.عرض') {
+    if (!isDeveloper(sender)) {
+      await sock.sendMessage(jid, { text: '⛔ أمر عرض الوسائط للمطورين فقط.' });
+      return true;
+    }
+    return showMedia(sock, m);
+  }
 
   if (cmd === '.احصائيات') {
     if (!hasRankPermission(sender)) {
