@@ -3,7 +3,7 @@ import { commandHandler } from './commandHandler.js';
 import { filterMessage } from '../system/filter.js';
 import { guessMessage } from '../games/guess.js';
 import { xoMessage } from '../games/xo.js';
-import { getDB, saveDB } from '../database/db.js';
+import { getDB, getUser, saveDB } from '../database/db.js';
 import { rememberOwnerIdentity } from '../utils/permissions.js';
 import { animeMessage } from '../commands/anime.js';
 import { cacheIncomingMedia } from '../system/media.js';
@@ -54,6 +54,11 @@ export async function messageHandler(sock, update) {
       const db = getDB();
       if (jid.endsWith('@g.us')) {
         const sender = m.key.participant || jid;
+        // XP grows slowly: one point for every ten group messages, silently.
+        const xpUser = getUser(sender);
+        xpUser.xpMessageCount = Number(xpUser.xpMessageCount || 0) + 1;
+        xpUser.xp = Math.floor(xpUser.xpMessageCount / 10);
+        db.users[sender] = xpUser;
         const stats = db.messageStats[jid] ||= { total: 0, members: {}, daily: {}, weekly: {} };
         stats.daily ||= {};
         stats.weekly ||= {};
