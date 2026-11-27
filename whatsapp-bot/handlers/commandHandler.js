@@ -19,7 +19,7 @@ export async function commandHandler(sock, m, text) {
     () => rankCommand(sock, m, text),
     () => animeCommand(sock, m, text),
     () => gamesCommand(sock, m, text),
-    () => marriageCommand(sock, m, cmd.slice(1)),
+    () => marriageCommand(sock, m, ({ 'الزواج': 'زواج', 'الطلاق': 'طلاق' })[cmd.slice(1)] || cmd.slice(1)),
     () => generalCommand(sock, m, text)
   ];
   for (const handler of handlers) if (await handler()) return true;
