@@ -53,7 +53,7 @@ bot.on('message:text', async ctx => {
   if (!ownerOnly(ctx)) return deny(ctx);
   if (!waitingForNumber.has(ctx.from.id)) return;
   const value = ctx.message.text.trim();
-  if (!/^\\+?[0-9\\s()-]{10,22}$/.test(value)) return ctx.reply('الرقم غير صحيح. أرسله مع مفتاح الدولة.');
+  if (!/^\+?[0-9\s()-]{10,22}$/.test(value)) return ctx.reply('الرقم غير صحيح. أرسله مع مفتاح الدولة.');
   waitingForNumber.delete(ctx.from.id);
   try {
     await startWhatsApp(value, ctx.chat.id, config);
