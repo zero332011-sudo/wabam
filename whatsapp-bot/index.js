@@ -85,6 +85,29 @@ async function startBot() {
       });
     });
 
+    // Welcome every newly added member in the WhatsApp group.
+    sock.ev.on('group-participants.update', async update => {
+      if (!['add', 'invite'].includes(update.action)) return;
+      const groupJid = update.id;
+      const participants = (update.participants || []).filter(Boolean);
+      if (!groupJid?.endsWith('@g.us') || participants.length === 0) return;
+      try {
+        const mentions = participants;
+        const names = mentions.map(id => '@' + String(id).split('@')[0].split(':')[0]);
+        await sock.sendMessage(groupJid, {
+          text: [
+            '🌟 عضو جديد انضم إلى عائلة WABAM!',
+            '',
+            'أهلاً وسهلاً ' + names.join('، '),
+            'نتمنى لكم وقتًا ممتعًا ومشاركة جميلة معنا 🍥'
+          ].join('\n'),
+          mentions
+        });
+      } catch (error) {
+        console.error('Group welcome:', groupJid, error?.message || error);
+      }
+    });
+
     sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
       console.log('حالة اتصال واتساب:', connection || (qr ? 'QR/جاهز لطلب الرمز' : 'تحديث'));
       if ((connection === 'connecting' || qr) && !state.creds.registered) {
