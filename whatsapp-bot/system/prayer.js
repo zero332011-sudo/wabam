@@ -2,7 +2,7 @@ import { getDB } from '../database/db.js';
 import { config } from '../config/settings.js';
 import { lockGroupForPrayer } from './groupLock.js';
 
-const sent = new Set();
+const sent = new Set();\nfunction formatClock(value) {\n  const [h, m] = String(value).split(':').map(Number);\n  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'مساءً' : 'صباحًا'}`;\n}
 const names = { Fajr: 'الفجر', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء' };
 const timingsUrl = new URL('https://api.aladhan.com/v1/timingsByCity');
 timingsUrl.search = new URLSearchParams({
@@ -45,7 +45,7 @@ export async function checkPrayer(sock) {
     if (!prayer || sent.has(sentKey)) return;
     const db = getDB();
     for (const [jid, settings] of Object.entries(db.groups)) {
-      if (!settings.prayerEnabled) continue;
+      
       try {
         const meta = await sock.groupMetadata(jid);
         const mentions = meta.participants.map(x => x.id);
