@@ -57,7 +57,7 @@ export async function generalCommand(sock, m, text) {
   const db = getDB();
   const botName = db.botName || config.name;
 
-  if (['.رئيسية', '.رئيسيه', '.اكتب الأوامر', '.اكتب_الأوامر', '.الاوامر', '.اوامر'].includes(trimmed)) {
+  if (['.رئيسية', '.رئيسيه', '.اكتب الأوامر', '.اكتب_الأوامر', '.الاوامر', '.اوامر', '.الأوامر'].includes(trimmed)) {
     await sock.sendMessage(jid, { text: mainMenu(botName) });
     return true;
   }
@@ -96,10 +96,10 @@ export async function generalCommand(sock, m, text) {
       '😀 .اضافه ايموجي 😀 | .حذف ايموجي 😀',
       '🏷️ .اضافه ملصق | .حذف ملصق (بالرد على الملصق)',
       '🔇 .كتم-@عضو | 🔊 .فك كتم-@عضو | 🚪 .طرد-@عضو',
-      '📢 .منشن — منشن أعضاء المجموعة',
       '🔒 .كتمل الجروب | 🔓 .فك الجروب'
     ];
-    lines.push('🖼️ .عرض — عرض الوسائط');
+    lines.push('📢 .منشن 1-10 @عضو — تكرار الإشارة داخل المجموعة');
+    lines.push('🖼️ .عرض — إعادة إرسال الوسائط المحفوظة');
     lines.push('✏️ .اسم الاسم الجديد — تغيير اسم البوت');
     await sock.sendMessage(jid, { text: lines.join('\n') });
     return true;
@@ -141,6 +141,37 @@ export async function generalCommand(sock, m, text) {
       return true;
     }
     return showMedia(sock, m);
+  }
+
+  if (cmd === '.منشن' || cmd === '.منشنن') {
+    if (!isDeveloper(sender)) {
+      await sock.sendMessage(jid, { text: '⛔ أمر المنشن للمطورين فقط.' });
+      return true;
+    }
+    if (!jid.endsWith('@g.us')) {
+      await sock.sendMessage(jid, { text: '📢 استخدم الأمر داخل المجموعة فقط.' });
+      return true;
+    }
+    const args = trimmed.split(/\s+/);
+    const count = args[1] && /^\d+$/.test(args[1]) ? Number(args[1]) : 1;
+    if (!Number.isInteger(count) || count < 1 || count > 10) {
+      await sock.sendMessage(jid, { text: '⚠️ الحد المسموح من 1 إلى 10 إشارات في الرسالة الواحدة.' });
+      return true;
+    }
+    let target = getTargetJid(m);
+    if (!target && args[2] && /^\+?\d{8,15}$/.test(args[2])) {
+      target = args[2].replace(/\D/g, '') + '@s.whatsapp.net';
+    }
+    if (!target) {
+      await sock.sendMessage(jid, { text: '📌 اعمل منشن للعضو أو رد على رسالته.\nمثال: .منشن 5 @عضو' });
+      return true;
+    }
+    const mention = '@' + target.split('@')[0].split(':')[0];
+    await sock.sendMessage(jid, {
+      text: '📢 تنبيه للمجموعة\n' + Array(count).fill(mention).join(' '),
+      mentions: Array(count).fill(target)
+    });
+    return true;
   }
 
   if (cmd === '.احصائيات') {

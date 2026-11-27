@@ -6,6 +6,7 @@ import { xoMessage } from '../games/xo.js';
 import { getDB, saveDB } from '../database/db.js';
 import { rememberOwnerIdentity } from '../utils/permissions.js';
 import { animeMessage } from '../commands/anime.js';
+import { cacheIncomingMedia } from '../system/media.js';
 
 function activityPeriods(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -27,6 +28,9 @@ export async function messageHandler(sock, update) {
     rememberOwnerIdentity(m);
 
     try {
+      // Save media immediately, before its temporary WhatsApp media key expires.
+      await cacheIncomingMedia(sock, m);
+
       // Send the private welcome message once per direct chat.
       if (!jid.endsWith('@g.us') && !jid.endsWith('@broadcast') &&
           (jid.endsWith('@s.whatsapp.net') || jid.endsWith('@lid'))) {
