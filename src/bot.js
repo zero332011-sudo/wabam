@@ -44,7 +44,17 @@ bot.callbackQuery('logs', async ctx => {
   const lines = getLogs();
   await ctx.reply('📜 آخر السجلات:\n\n' + (lines.length ? lines.join('\n') : 'لا توجد سجلات.'), { reply_markup: keyboard() });
 });
-bot.callbackQuery('restart', async ctx => {\n  if (!ownerOnly(ctx)) return deny(ctx);\n  await ctx.answerCallbackQuery();\n  try { await restartWhatsApp(config); await ctx.reply('🔄 تم طلب إعادة تشغيل بوت واتساب.'); }\n  catch (err) { await ctx.reply('❌ ' + err.message); }\n});\nbot.callbackQuery('stop', async ctx => {
+bot.callbackQuery('restart', async ctx => {
+  if (!ownerOnly(ctx)) return deny(ctx);
+  await ctx.answerCallbackQuery();
+  try {
+    await restartWhatsApp(config);
+    await ctx.reply('🔄 تم طلب إعادة تشغيل بوت واتساب.');
+  } catch (err) {
+    await ctx.reply('❌ ' + err.message);
+  }
+});
+bot.callbackQuery('stop', async ctx => {
   if (!ownerOnly(ctx)) return deny(ctx);
   await ctx.answerCallbackQuery();
   await ctx.reply(stopWhatsApp() ? '⏹ تم إرسال طلب الإيقاف.' : 'البوت متوقف بالفعل.', { reply_markup: keyboard() });
@@ -58,7 +68,9 @@ bot.on('message:text', async ctx => {
   try {
     await startWhatsApp(value, ctx.chat.id, config);
     await ctx.reply('⏳ بدأ تشغيل بوت واتساب. سأرسل رمز الربط هنا فور ظهوره.');
-  } catch (err) { await ctx.reply('❌ ' + err.message); }
+  } catch (err) {
+    await ctx.reply('❌ ' + err.message);
+  }
 });
 bot.catch(err => console.error('Telegram error:', err));
 export { bot };
