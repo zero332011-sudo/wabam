@@ -7,4 +7,4 @@ export async function sendProfile(sock,message,target){
  const caption=`👤 معلومات العضو\n🏷️ اللقب: ${u.nickname}\n📱 الرقم: ${who.split('@')[0]}\n🆔 المعرف: ${who}\n👑 الرتبة: ${ranks[u.rank]||'غير محددة'}\n🏦 البنك: ${u.bank} جنيه\n👛 المحفظة: ${u.wallet} جنيه`;
  await sock.sendMessage(jid,pp?{image:{url:pp},caption}:{text:caption},{quoted:message});
 }
-export function updateNickname(jid,nickname){const db=getDB();db.users[jid] ||= {jid,nickname:'عضو جديد',rank:17,bank:40,wallet:0,hearts:3,warnings:0};db.users[jid].nickname=nickname;saveDB(db);}
+export function updateNickname(jid,nickname){const db=getDB();db.users[jid] ||= {jid,nickname:'عضو جديد',rank:1,bank:40,wallet:0,hearts:3,warnings:0};db.users[jid].nickname=nickname;saveDB(db);}
