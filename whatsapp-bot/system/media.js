@@ -77,7 +77,15 @@ export async function cacheIncomingMedia(sock, message) {
   const key = cacheKey(jid, id);
   const db = getDB();
   db.mediaCache ||= {};
-  if (db.mediaCache[key]?.filePath) return true;
+  if (db.mediaCache[key]?.filePath) {
+    try {
+      await fs.access(db.mediaCache[key].filePath);
+      return true;
+    } catch {
+      // The database entry may outlive a temporary container file; rebuild it now.
+      delete db.mediaCache[key];
+    }
+  }
 
   try {
     const downloaded = await downloadMediaMessage(message, 'buffer', {}, {
@@ -141,7 +149,7 @@ export async function showMedia(sock, message) {
       remoteJid: jid,
       id: ctx.stanzaId,
       participant: ctx.participant || ctx.participantPn || ctx.participantAlt || message.key.participant,
-      fromMe: false
+      fromMe: !!ctx.fromMe
     },
     message: ctx.quotedMessage,
     messageTimestamp: message.messageTimestamp
