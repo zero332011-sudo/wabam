@@ -4,6 +4,7 @@ import { ranks, config } from '../config/settings.js';
 import { isDeveloper, hasRankPermission, isOwner } from '../utils/permissions.js';
 import { showMedia } from '../system/media.js';
 import { getPrayerSchedule } from '../system/prayer.js';
+import { isDeveloper } from '../utils/permissions.js';
 
 function formatPrayerTime(value) {
   const [h, m] = String(value).slice(0, 5).split(':').map(Number);
@@ -21,21 +22,29 @@ function cairoDateKey(date = new Date()) {
 }
 
 const mainMenu = name => [
-  `🌌 ${name}`,
-  '📋 القائمة الرئيسية — أوامر الأعضاء',
-  '',
-  '👤 .معلومات — عرض بطاقة العضو',
-  '🏷️ .لقب — تغيير لقب العضو',
-  '💍 .زواج — اختيار عضوين للزواج الترفيهي',
-  '💔 .طلاق — اختيار عضوين للطلاق الترفيهي',
-  '📊 .احصائيات — عرض إحصائيات المجموعة',
-  '🕒 .وقت — عرض الوقت',
-  '🌅 .صلاه — عرض مواقيت الصلاة في سوهاج',
-  '🍥 .انمي — فتح مكتبة الأنمي',
-  '🏅 .ترقيه — ترقية عضو باستخدام رقم الرتبة',
-  '',
-  '🎮 .الألعاب — فتح قائمة الألعاب',
-  '🏦 .بنك — فتح قائمة البنك والمحفظة'
+  `╭━━━〔 🌌 ${name} 〕━━━╮`,
+  '📋 القائمة الرئيسية',
+  '━━━━━━━━━━━━━━━━',
+  '👤 معلومات الأعضاء',
+  '   └ .معلومات — بطاقة العضو',
+  '🏷️ الألقاب والرتب',
+  '   └ .لقب — تغيير لقبك',
+  '   └ .ترقيه — ترقية عضو',
+  '🎭 الترفيه والتفاعل',
+  '   └ .زواج — اختيار ثنائي عشوائي',
+  '   └ .طلاق — فك الارتباط العشوائي',
+  '📊 النشاط',
+  '   └ .احصائيات — نشاط المجموعة',
+  '🕒 الخدمات',
+  '   └ .وقت — الوقت الحالي',
+  '   └ .صلاه — مواقيت سوهاج',
+  '🍥 الأنمي',
+  '   └ .انمي — مكتبة الأنمي',
+  '━━━━━━━━━━━━━━━━',
+  '🎮 .الألعاب — قائمة الألعاب',
+  '🏦 .بنك — البنك والمحفظة',
+  '👑 .المطور — قائمة المطور (للمطور فقط)',
+  '╰━━━━━━━━━━━━━━━━╯'
 ].join('\n');
 
 const gamesMenu = [
@@ -67,6 +76,7 @@ export async function generalCommand(sock, m, text) {
   }
   if (trimmed === '.بنك') {
     const user = getUser(sender);
+    const infinite = isDeveloper(sender);
     await sock.sendMessage(jid, {
       text: [
         '🏦 قائمة البنك والمحفظة',
@@ -76,9 +86,9 @@ export async function generalCommand(sock, m, text) {
         '💸 .تحويل مبلغ-@شخص — تحويل الأموال',
         '',
         '💰 رصيدك الحالي',
-        `🏦 البنك: ${user.bank} ج`,
-        `💵 المحفظة: ${user.wallet} ج`,
-        `💎 الإجمالي: ${Number(user.bank || 0) + Number(user.wallet || 0)} ج`
+        `🏦 البنك: ${infinite ? '∞' : user.bank} ج`,
+        `💵 المحفظة: ${infinite ? '∞' : user.wallet} ج`,
+        `💎 الإجمالي: ${infinite ? '∞' : Number(user.bank || 0) + Number(user.wallet || 0)} ج`
       ].join('\n')
     });
     return true;
