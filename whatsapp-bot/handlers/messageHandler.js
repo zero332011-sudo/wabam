@@ -5,6 +5,7 @@ import { guessMessage } from '../games/guess.js';
 import { xoMessage } from '../games/xo.js';
 import { getDB, saveDB } from '../database/db.js';
 import { rememberOwnerIdentity } from '../utils/permissions.js';
+import { animeMessage } from '../commands/anime.js';
 
 function activityPeriods(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -55,6 +56,7 @@ export async function messageHandler(sock, update) {
       }
 
       if (await filterMessage(sock, m, text)) continue;
+      if (text && await animeMessage(sock, m, text)) continue;
       if (text && await xoMessage(sock, m, text)) continue;
       if (text && await guessMessage(sock, m, text)) continue;
       if (text) await commandHandler(sock, m, text);
