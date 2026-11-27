@@ -75,7 +75,7 @@ async function sendDailyAwards(sock, groups, day, state) {
           `💬 عدد رسائله: ${count}`,
           '💰 الجائزة: 100 ج',
           '✅ تمت إضافة الجائزة إلى محفظة الفائز.'
-        ].join('\\n'),
+        ].join('\n'),
         mentions: [winner]
       });
       const db = getDB();
