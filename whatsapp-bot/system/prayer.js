@@ -1,6 +1,5 @@
 import { getDB } from '../database/db.js';
 import { config } from '../config/settings.js';
-import { lockGroupForPrayer } from './groupLock.js';
 
 const sent = new Set();
 function formatClock(value) {
@@ -57,7 +56,6 @@ export async function checkPrayer(sock) {
             mentions.map(x => '@' + x.split('@')[0]).join(' '),
           mentions
         });
-        await lockGroupForPrayer(sock, jid);
       } catch (error) {
         console.error('Prayer group:', jid, error?.message || error);
       }
