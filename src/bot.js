@@ -1,13 +1,13 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import { config } from './config.js';
-import { getStatus, getLogs, setPairingNotifier, startWhatsApp, stopWhatsApp } from './process-manager.js';
+import { getStatus, getLogs, setPairingNotifier, startWhatsApp, stopWhatsApp, restartWhatsApp } from './process-manager.js';
 
 const bot = new Bot(config.token);
 const waitingForNumber = new Set();
 const keyboard = () => new InlineKeyboard()
   .text('📲 ربط / تشغيل', 'pair').row()
   .text('📊 الحالة', 'status').text('📜 السجلات', 'logs').row()
-  .text('⏹ إيقاف', 'stop');
+  .text('⏹ إيقاف', 'stop').text('🔄 إعادة تشغيل', 'restart');
 const ownerOnly = ctx => ctx.from?.id === config.ownerId;
 
 async function deny(ctx) {
@@ -44,7 +44,7 @@ bot.callbackQuery('logs', async ctx => {
   const lines = getLogs();
   await ctx.reply('📜 آخر السجلات:\n\n' + (lines.length ? lines.join('\n') : 'لا توجد سجلات.'), { reply_markup: keyboard() });
 });
-bot.callbackQuery('stop', async ctx => {
+bot.callbackQuery('restart', async ctx => {\n  if (!ownerOnly(ctx)) return deny(ctx);\n  await ctx.answerCallbackQuery();\n  try { await restartWhatsApp(config); await ctx.reply('🔄 تم طلب إعادة تشغيل بوت واتساب.'); }\n  catch (err) { await ctx.reply('❌ ' + err.message); }\n});\nbot.callbackQuery('stop', async ctx => {
   if (!ownerOnly(ctx)) return deny(ctx);
   await ctx.answerCallbackQuery();
   await ctx.reply(stopWhatsApp() ? '⏹ تم إرسال طلب الإيقاف.' : 'البوت متوقف بالفعل.', { reply_markup: keyboard() });
