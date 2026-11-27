@@ -140,11 +140,11 @@ export async function guessMessage(sock, m, text) {
     }
     const db = getDB();
     const winnerUser = getUser(who);
-    winnerUser.bank = (Number(winnerUser.bank) || 0) + WIN_REWARD;
+    winnerUser.wallet = (Number(winnerUser.wallet) || 0) + WIN_REWARD;
     db.users[who] = winnerUser;
     saveDB(db);
     await sock.sendMessage(jid, {
-      text: `🏆 إجابة صحيحة يا @${who.split('@')[0]}!\n🎯 الإجابة: ${game.answerName}\n💰 حصلت على ${WIN_REWARD} جنيه في البنك.\n${selected ? `🎯 تم اختيار @${selected.split('@')[0]} عشوائيًا ليخسر قلبًا واحدًا.` : 'لا يوجد مشارك آخر ليخسر قلبًا.'}\n\n❤️ القلوب:\n${heartsLine(game)}`,
+      text: `🏆 إجابة صحيحة يا @${who.split('@')[0]}!\n🎯 الإجابة: ${game.answerName}\n💰 حصلت على ${WIN_REWARD} ج في محفظتك.\n${selected ? `🎯 تم اختيار @${selected.split('@')[0]} عشوائيًا ليخسر قلبًا واحدًا.` : 'لا يوجد مشارك آخر ليخسر قلبًا.'}\n\n❤️ القلوب:\n${heartsLine(game)}`,
       mentions: [...new Set([...game.participants, ...(selected ? [selected] : [])])]
     });
     await nextRound(sock, jid, game);
