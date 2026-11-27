@@ -14,6 +14,7 @@ function normalizeEgyptianNumber(value) {
 export const config = {
   name: process.env.BOT_NAME || 'WABAM',
   developerId: String(process.env.DEVELOPER_ID || '69033026138303').replace(/\D/g, ''),
+  developerNumber: normalizeEgyptianNumber(process.env.DEVELOPER_NUMBER || '01032219184'),
   contactNumber: process.env.CONTACT_NUMBER || '01032219184',
   owner: normalizeEgyptianNumber(process.env.OWNER_NUMBER),
   pairingNumber: normalizeEgyptianNumber(process.env.PAIRING_NUMBER),
