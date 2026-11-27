@@ -17,5 +17,10 @@
   },
   "workspaces": [
     "whatsapp-bot"
-  ]
-}
+  ],
+  "overrides": {
+    "@whiskeysockets/baileys": {
+      "libsignal": "^6.0.0"
+    }
+  }
+}\n
