@@ -1,0 +1,25 @@
+{
+  "name": "whatsapp-anime-bot",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js && node --check anime/animeData.js && node --check commands/admin.js && node --check commands/anime.js && node --check commands/economy.js && node --check commands/games.js && node --check commands/general.js && node --check commands/moderation.js && node --check commands/ranks.js && node --check config/settings.js && node --check database/db.js && node --check games/guess.js && node --check games/xo.js && node --check handlers/commandHandler.js && node --check system/communityAwards.js && node --check system/filter.js && node --check system/gameManager.js && node --check system/groupLock.js && node --check system/marriage.js && node --check system/media.js && node --check system/mediaStorage.js && node --check system/ownerTools.js && node --check system/prayer.js && node --check system/profile.js && node --check system/warnings.js && node --check utils/helpers.js && node --check utils/permissions.js",
+    "prestart": "npm run check"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "dotenv": "^16.4.7",
+    "pino": "^9.6.0"
+  },
+  "overrides": {
+    "@whiskeysockets/baileys": {
+      "libsignal": "^6.0.0"
+    }
+  }
+}
