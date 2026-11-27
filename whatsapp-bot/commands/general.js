@@ -118,7 +118,7 @@ export async function generalCommand(sock, m, text) {
           '🌤️ العصر: ' + formatPrayerTime(t.Asr),
           '🌇 المغرب: ' + formatPrayerTime(t.Maghrib),
           '🌙 العشاء: ' + formatPrayerTime(t.Isha)
-        ].join('\\n')
+        ].join('\n')
       });
     } catch {
       await sock.sendMessage(jid, { text: '❌ تعذر جلب مواقيت الصلاة الآن. حاول مرة أخرى لاحقًا.' });
