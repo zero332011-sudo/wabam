@@ -4,8 +4,6 @@ import { ranks, config } from '../config/settings.js';
 import { isDeveloper, hasRankPermission, isOwner } from '../utils/permissions.js';
 import { showMedia } from '../system/media.js';
 import { getPrayerSchedule } from '../system/prayer.js';
-import { isDeveloper } from '../utils/permissions.js';
-
 function formatPrayerTime(value) {
   const [h, m] = String(value).slice(0, 5).split(':').map(Number);
   const suffix = h >= 12 ? 'مساءً' : 'صباحًا';
@@ -211,7 +209,7 @@ export async function generalCommand(sock, m, text) {
     const target = getTargetJid(m) || sender;
     const user = getUser(target);
     const rank = ranks[Number(user.rank)] || 'غير محددة';
-    const caption = `👤 بطاقة العضو\n🏷️ اللقب: ${user.nickname}\n📱 الرقم: ${target.split('@')[0]}\n👑 الرتبة: ${rank} (${user.rank}/20)\n🏦 البنك: ${user.bank} ج\n💵 المحفظة: ${user.wallet} ج\n⚠️ الإنذارات: ${user.warnings || 0}`;
+    const infinite = isDeveloper(target);\n    const caption = `👤 بطاقة العضو\n🏷️ اللقب: ${user.nickname}\n📱 الرقم: ${target.split('@')[0]}\n👑 الرتبة: ${rank} (${user.rank}/20)\n🏦 البنك: ${infinite ? '∞' : user.bank} ج\n💵 المحفظة: ${infinite ? '∞' : user.wallet} ج\n⚠️ الإنذارات: ${user.warnings || 0}`;
     try {
       const url = await sock.profilePictureUrl(target, 'image');
       await sock.sendMessage(jid, { image: { url }, caption, mentions: [target] });
