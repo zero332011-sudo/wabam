@@ -12,7 +12,7 @@ function normalizeEgyptianNumber(value) {
 }
 
 export const config = {
-  name: process.env.BOT_NAME || 'Anime Bot',
+  name: process.env.BOT_NAME || 'WABAM',
   owner: normalizeEgyptianNumber(process.env.OWNER_NUMBER),
   pairingNumber: normalizeEgyptianNumber(process.env.PAIRING_NUMBER),
   timezone: process.env.TIMEZONE || 'Africa/Cairo',
@@ -21,8 +21,30 @@ export const config = {
   prefix: '.'
 };
 
+// الرقم 20 هو الإمبراطور، والرقم 1 هو أقل رتبة.
+// كل مستويين: نائب ثم القائد.
 export const ranks = [
-  'الإمبراطور','نائب الإمبراطور','الإمبراطور الأعلى','الإمبراطور الأعظم',
-  'الإمبراطور الأسطوري','الإمبراطور الملكي','الإمبراطور الذهبي','الأسطورة',
-  'الملك','الأمير','القائد','الجنرال','المحارب','الفارس','النخبة','المحترف','الخبير','المبتدئ'
+  null,
+  'نائب المبتدئ',
+  'المبتدئ',
+  'نائب النينجا',
+  'النينجا',
+  'نائب الفارس',
+  'الفارس',
+  'نائب المحارب',
+  'المحارب',
+  'نائب الكابتن',
+  'الكابتن',
+  'نائب الجنرال',
+  'الجنرال',
+  'نائب القائد',
+  'القائد',
+  'نائب القائد الأعلى',
+  'القائد الأعلى',
+  'نائب الإمبراطور المساعد',
+  'الإمبراطور المساعد',
+  'نائب الإمبراطور',
+  'الإمبراطور'
 ];
+
+export const canPromote = rank => Number(rank) >= 17 && Number(rank) <= 20;
