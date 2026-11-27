@@ -25,6 +25,17 @@ function getMedia(message) {
   return null;
 }
 
+function getContextInfo(message) {
+  const unwrapped = unwrapMessage(message);
+  for (const key of [
+    'extendedTextMessage', 'imageMessage', 'videoMessage',
+    'documentMessage', 'audioMessage', 'stickerMessage'
+  ]) {
+    if (unwrapped[key]?.contextInfo) return unwrapped[key].contextInfo;
+  }
+  return null;
+}
+
 function extensionFor(kind, mimetype = '') {
   const mime = String(mimetype).toLowerCase();
   if (mime.includes('jpeg')) return 'jpg';
@@ -66,7 +77,15 @@ export async function cacheIncomingMedia(sock, message) {
   const key = cacheKey(jid, id);
   const db = getDB();
   db.mediaCache ||= {};
-  if (db.mediaCache[key]?.filePath) return true;
+  if (db.mediaCache[key]?.filePath) {
+    try {
+      await fs.access(db.mediaCache[key].filePath);
+      return true;
+    } catch {
+      // The database entry may outlive a temporary container file; rebuild it now.
+      delete db.mediaCache[key];
+    }
+  }
 
   try {
     const downloaded = await downloadMediaMessage(message, 'buffer', {}, {
@@ -107,7 +126,7 @@ export async function cacheIncomingMedia(sock, message) {
 
 export async function showMedia(sock, message) {
   const jid = message.key.remoteJid;
-  const ctx = message.message?.extendedTextMessage?.contextInfo;
+  const ctx = getContextInfo(message.message);
   if (!ctx?.quotedMessage || !ctx?.stanzaId) {
     await sock.sendMessage(jid, { text: '📎 رد على صورة أو فيديو أو ملف بالأمر .عرض.' });
     return true;
@@ -126,8 +145,14 @@ export async function showMedia(sock, message) {
 
   // Try the old download route for messages received before caching was enabled.
   const quoted = {
-    key: { remoteJid: jid, id: ctx.stanzaId, participant: ctx.participant || message.key.participant, fromMe: false },
-    message: ctx.quotedMessage
+    key: {
+      remoteJid: jid,
+      id: ctx.stanzaId,
+      participant: ctx.participant || ctx.participantPn || ctx.participantAlt || message.key.participant,
+      fromMe: !!ctx.fromMe
+    },
+    message: ctx.quotedMessage,
+    messageTimestamp: message.messageTimestamp
   };
   try {
     const buffer = await downloadMediaMessage(quoted, 'buffer', {}, {

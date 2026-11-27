@@ -19,23 +19,29 @@ function cairoDateKey(date = new Date()) {
   return `${p.year}-${p.month}-${p.day}`;
 }
 
+const commandHub = name => [
+  `🌌 ${name}`,
+  '📋 القائمة الرئيسية',
+  '',
+  '👤 .رئيسيه — أوامر الأعضاء',
+  '🎮 .الألعاب — قائمة الألعاب',
+  '🏦 .بنك — البنك والمحفظة'
+].join('\n');
+
 const mainMenu = name => [
   `🌌 ${name}`,
   '📋 القائمة الرئيسية — أوامر الأعضاء',
-  '📌 اكتب .رئيسيه لعرض قائمة الأوامر',
   '',
   '👤 .معلومات — عرض بطاقة العضو',
   '🏷️ .لقب — تغيير لقب العضو',
   '💍 .زواج — اختيار عضوين للزواج الترفيهي',
   '💔 .طلاق — اختيار عضوين للطلاق الترفيهي',
-  '📊 .احصائيات — عرض إحصائيات نشاط المجموعة',
-  '🕒 .وقت — عرض الوقت والتاريخ',
-  '🌅 .صلاه — عرض مواقيت الصلاة',
+  '📊 .احصائيات — عرض إحصائيات المجموعة',
+  '🕒 .وقت — عرض الوقت',
+  '🌅 .صلاه — عرض مواقيت الصلاة في سوهاج',
   '🍥 .انمي — فتح مكتبة الأنمي',
-  '🏅 .ترقيه — ترقية عضو',
-  '🎮 .الألعاب — فتح قائمة الألعاب',
-  '🏦 .بنك — فتح قائمة البنك والمحفظة'
-].join('\\n');
+  '🏅 .ترقيه — ترقية عضو باستخدام رقم الرتبة'
+].join('\n');
 
 const gamesMenu = [
   '🎮 قائمة الألعاب',
@@ -56,7 +62,11 @@ export async function generalCommand(sock, m, text) {
   const db = getDB();
   const botName = db.botName || config.name;
 
-  if (['.رئيسية', '.رئيسيه', '.اكتب الأوامر', '.اكتب_الأوامر', '.الاوامر', '.اوامر', '.الأوامر'].includes(trimmed)) {
+  if (['.اوامر', '.الأوامر', '.الاوامر'].includes(trimmed)) {
+    await sock.sendMessage(jid, { text: commandHub(botName) });
+    return true;
+  }
+  if (['.رئيسية', '.رئيسيه'].includes(trimmed)) {
     await sock.sendMessage(jid, { text: mainMenu(botName) });
     return true;
   }
@@ -204,20 +214,33 @@ export async function generalCommand(sock, m, text) {
     if (developer) { user.rank = 20; db.users[target] = user; saveDB(db); }
     const rank = developer ? 'الإمبراطور 👑' : (ranks[Number(user.rank)] || 'غير محددة');
     const infinite = developer;
-    const caption = `👤 بطاقة العضو\\n🏷️ اللقب: ${user.nickname}\\n📱 الرقم/المعرف: ${target.split('@')[0]}\\n👑 الرتبة: ${rank} (${developer ? 20 : user.rank}/20)\\n⭐ XP: ${user.xp || 0}\\n🏦 البنك: ${infinite ? '∞' : user.bank} ج\\n💵 المحفظة: ${infinite ? '∞' : user.wallet} ج`;
+    const caption = `👤 بطاقة العضو\n━━━━━━━━━━━━━━\n🏷️ اللقب: ${user.nickname}\n📱 الرقم/المعرف: ${target.split('@')[0]}\n👑 الرتبة: ${rank} (${developer ? 20 : user.rank}/20)\n⭐ XP: ${user.xp || 0}\n━━━━━━━━━━━━━━\n🏦 البنك: ${infinite ? '∞' : user.bank} ج\n💵 المحفظة: ${infinite ? '∞' : user.wallet} ج`;
 
     // LID accounts may require the participant's phone-number alias.
-    const candidates = new Set([target, m.key.participantPn, m.key.participantAlt, sender]);
+    const candidates = new Set([
+      target, sender, m.key.participant, m.key.participantPn, m.key.participantAlt,
+      m.key.remoteJid
+    ].filter(Boolean));
+    const digits = value => String(value || '').split('@')[0].split(':')[0].replace(/\D/g, '');
     if (jid.endsWith('@g.us')) {
       try {
         const metadata = await sock.groupMetadata(jid);
-        const participant = (metadata.participants || []).find(p =>
-          [p.id, p.lid, p.phoneNumber, p.jid].filter(Boolean).includes(target) ||
-          [p.id, p.lid, p.phoneNumber, p.jid].filter(Boolean).includes(sender)
-        );
+        const targetDigits = digits(target);
+        const senderDigits = digits(sender);
+        const participant = (metadata.participants || []).find(p => {
+          const ids = [p.id, p.lid, p.phoneNumber, p.jid, p.phoneNumberJid].filter(Boolean);
+          return ids.includes(target) || ids.includes(sender) ||
+            (targetDigits && ids.some(value => digits(value) === targetDigits)) ||
+            (senderDigits && ids.some(value => digits(value) === senderDigits));
+        });
         if (participant) {
-          for (const value of [participant.id, participant.lid, participant.phoneNumber, participant.jid]) {
-            if (value) candidates.add(value);
+          for (const value of [
+            participant.id, participant.lid, participant.phoneNumber,
+            participant.jid, participant.phoneNumberJid
+          ]) {
+            if (!value) continue;
+            const candidate = String(value).includes('@') ? String(value) : String(value) + '@s.whatsapp.net';
+            candidates.add(candidate);
           }
         }
       } catch (error) {
@@ -227,7 +250,7 @@ export async function generalCommand(sock, m, text) {
 
     let picture = null;
     for (const candidate of candidates) {
-      if (!candidate || !String(candidate).includes('@')) continue;
+      if (!candidate || !String(candidate).includes('@') || String(candidate).endsWith('@g.us')) continue;
       try {
         picture = await sock.profilePictureUrl(candidate, 'image');
         if (picture) break;
