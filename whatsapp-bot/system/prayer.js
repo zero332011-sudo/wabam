@@ -53,7 +53,7 @@ export async function checkPrayer(sock) {
         const meta = await sock.groupMetadata(jid);
         const mentions = meta.participants.map(x => x.id);
         await sock.sendMessage(jid, {
-          text: '🕌 حان الآن موعد صلاة ' + prayer[1] + ' بتوقيت ' + config.prayerCity + '. تقبل الله منكم.\n' +
+          text: '🕌 حان الآن موعد صلاة ' + prayer[1] + ' بتوقيت ' + config.prayerCityLabel + '، الساعة ' + formatClock(now) + '. تقبل الله منكم.\n' +
             mentions.map(x => '@' + x.split('@')[0]).join(' '),
           mentions
         });
