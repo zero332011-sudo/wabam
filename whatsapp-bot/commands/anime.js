@@ -50,7 +50,7 @@ export async function animeCommand(sock, m, text) {
       await sock.sendMessage(jid, { text: '🍥 مكتبة الأنمي فارغة حاليًا. يمكن للمطور إضافة الأنميات من لوحة إدارة التليجرام.' });
       return true;
     }
-    selections.set(jid, { step: 'anime', animeNames: names });
+    selections.set(jid + ':' + sender, { step: 'anime', animeNames: names });
     await sock.sendMessage(jid, {
       text: '🍥 مكتبة الأنمي\n\n' + names.map((name, i) => `${i + 1}. ${name}`).join('\n') +
         '\n\n🔢 أرسل رقم الأنمي الذي تريده.'
@@ -144,10 +144,11 @@ export async function animeCommand(sock, m, text) {
 }
 
 export async function animeMessage(sock, m, text) {
-  const jid = m.key.remoteJid, state = selections.get(jid);
+  const jid = m.key.remoteJid, sender = m.key.participant || jid, key = jid + ':' + sender;
+  const state = selections.get(key);
   if (!state || !text || text.startsWith('.')) return false;
   if (['الغاء', 'إلغاء', 'cancel'].includes(text.trim().toLowerCase())) {
-    selections.delete(jid);
+    selections.delete(key);
     await sock.sendMessage(jid, { text: '↩️ تم إلغاء اختيار الأنمي.' });
     return true;
   }
