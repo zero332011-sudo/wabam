@@ -1,0 +1,10 @@
+{
+  "name": "wabam",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": { "start": "node src/index.js", "check": "node --check src/index.js && node --check src/bot.js && node --check src/process-manager.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "grammy": "^1.35.0", "dotenv": "^16.4.7" }
+}
