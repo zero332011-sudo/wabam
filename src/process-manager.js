@@ -77,3 +77,22 @@ export function stopWhatsApp() {
   timer.unref();
   return true;
 }
+
+export async function restartWhatsApp(config) {
+  if (!lastNumber) throw new Error('لا يوجد رقم واتساب محفوظ لإعادة التشغيل.');
+  const number = lastNumber;
+  const chatId = chatIdForCode;
+  if (child && child.exitCode === null) {
+    const running = child;
+    await new Promise(resolve => {
+      const timer = setTimeout(() => {
+        if (running.exitCode === null) running.kill('SIGKILL');
+        resolve();
+      }, 7000);
+      timer.unref();
+      running.once('exit', () => { clearTimeout(timer); resolve(); });
+      running.kill('SIGTERM');
+    });
+  }
+  await startWhatsApp(number, chatId, config);
+}
