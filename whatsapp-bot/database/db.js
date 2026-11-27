@@ -74,10 +74,16 @@ export function getUser(jid) {
     else if (normalizedOwner.startsWith('0')) normalizedOwner = '20' + normalizedOwner.slice(1);
     else if (normalizedOwner && !normalizedOwner.startsWith('20')) normalizedOwner = '20' + normalizedOwner;
     const owner = (!!normalizedOwner && numberOf(jid) === normalizedOwner) || (db.ownerJids || []).includes(jid);
-    const developer = owner || db.developers.some(x => numberOf(x) === numberOf(jid));
+    const developerNumber = String(process.env.DEVELOPER_NUMBER || process.env.CONTACT_NUMBER || '01032219184').replace(/\D/g, '');
+    let normalizedDeveloper = developerNumber;
+    if (normalizedDeveloper.startsWith('0020')) normalizedDeveloper = normalizedDeveloper.slice(2);
+    else if (normalizedDeveloper.startsWith('0')) normalizedDeveloper = '20' + normalizedDeveloper.slice(1);
+    else if (normalizedDeveloper && !normalizedDeveloper.startsWith('20')) normalizedDeveloper = '20' + normalizedDeveloper;
+    const configuredDeveloperId = String(process.env.DEVELOPER_ID || '69033026138303').replace(/\D/g, '');
+    const developer = owner || numberOf(jid) === normalizedDeveloper || numberOf(jid) === configuredDeveloperId || db.developers.some(x => numberOf(x) === numberOf(jid));
     db.users[jid] = {
-      jid, nickname: 'عضو جديد', rank: owner ? 20 : developer ? 17 : 1,
-      bank: developer ? 100 : 40, wallet: 0, hearts: 3, warnings: 0
+      jid, nickname: 'عضو جديد', rank: owner || developer ? 20 : 1,
+      bank: developer ? 100 : 40, wallet: 0, hearts: 3, warnings: 0, xp: 0, xpMessageCount: 0
     };
     saveDB(db);
   }
