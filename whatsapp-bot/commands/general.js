@@ -5,7 +5,7 @@ import { isDeveloper, hasRankPermission, isOwner } from '../utils/permissions.js
 import { showMedia } from '../system/media.js';
 import { getPrayerSchedule } from '../system/prayer.js';
 
-function cairoDateKey(date = new Date()) {
+function formatPrayerTime(value) {\n  const [h, m] = String(value).slice(0, 5).split(':').map(Number);\n  const suffix = h >= 12 ? 'مساءً' : 'صباحًا';\n  const hour = h % 12 || 12;\n  return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;\n}\n\nfunction cairoDateKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: config.timezone, year: 'numeric', month: '2-digit', day: '2-digit'
   }).formatToParts(date);
@@ -23,9 +23,12 @@ const mainMenu = name => [
   '💔 .طلاق — اختيار عضوين للطلاق الترفيهي',
   '📊 .احصائيات — عرض إحصائيات المجموعة',
   '🕒 .وقت — عرض الوقت',
-  '🌅 .مواقيت الصلاة — عرض مواقيت الصلاة',
+  '🌅 .صلاه — عرض مواقيت الصلاة في سوهاج',
   '🍥 .انمي — فتح مكتبة الأنمي',
-  '🏅 .ترقيه — ترقية عضو باستخدام رقم الرتبة'
+  '🏅 .ترقيه — ترقية عضو باستخدام رقم الرتبة',
+  '',
+  '🎮 .الألعاب — فتح قائمة الألعاب',
+  '🏦 .بنك — فتح قائمة البنك والمحفظة'
 ].join('\n');
 
 const gamesMenu = [
@@ -80,7 +83,7 @@ export async function generalCommand(sock, m, text) {
       return true;
     }
     const lines = [
-      '👑 قائمة أوامر الإدارة',
+      '👑 قائمة المطور — WABAM',
       '👨‍💻 .اضافه مطور @عضو',
       '🚫 .اضافه كلمه كلمة | .حذف كلمه كلمة',
       '😀 .اضافه ايموجي 😀 | .حذف ايموجي 😀',
@@ -89,24 +92,24 @@ export async function generalCommand(sock, m, text) {
       '📢 .منشن — منشن أعضاء المجموعة',
       '🔒 .كتمل الجروب | 🔓 .فك الجروب'
     ];
-    if (isDeveloper(sender)) lines.push('🖼️ .عرض', '✏️ .اسم الاسم الجديد');
+    lines.push('🖼️ .عرض — عرض الوسائط');\n    lines.push('✏️ .اسم الاسم الجديد — تغيير اسم البوت');
     await sock.sendMessage(jid, { text: lines.join('\n') });
     return true;
   }
 
-  if (trimmed === '.مواقيت الصلاة') {
+  if (trimmed === '.صلاه' || trimmed === '.مواقيت الصلاة') {
     try {
       const schedule = await getPrayerSchedule();
       const t = schedule.timings;
       await sock.sendMessage(jid, {
         text: [
-          '🌅 مواقيت الصلاة — ' + config.prayerCity,
+          '🌅 مواقيت الصلاة — ' + config.prayerCityLabel,
           '📅 التاريخ: ' + schedule.date,
-          '🌄 الفجر: ' + String(t.Fajr).slice(0, 5),
-          '☀️ الظهر: ' + String(t.Dhuhr).slice(0, 5),
-          '🌤️ العصر: ' + String(t.Asr).slice(0, 5),
-          '🌇 المغرب: ' + String(t.Maghrib).slice(0, 5),
-          '🌙 العشاء: ' + String(t.Isha).slice(0, 5)
+          '🌄 الفجر: ' + formatPrayerTime(t.Fajr),
+          '☀️ الظهر: ' + formatPrayerTime(t.Dhuhr),
+          '🌤️ العصر: ' + formatPrayerTime(t.Asr),
+          '🌇 المغرب: ' + formatPrayerTime(t.Maghrib),
+          '🌙 العشاء: ' + formatPrayerTime(t.Isha)
         ].join('\\n')
       });
     } catch {
