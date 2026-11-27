@@ -3,6 +3,7 @@ import { getTargetJid } from '../utils/helpers.js';
 import { ranks, config } from '../config/settings.js';
 import { isDeveloper, hasRankPermission, isOwner } from '../utils/permissions.js';
 import { showMedia } from '../system/media.js';
+import { getPrayerSchedule } from '../system/prayer.js';
 
 function cairoDateKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -89,6 +90,27 @@ export async function generalCommand(sock, m, text) {
     ];
     if (isDeveloper(sender)) lines.push('🖼️ .عرض', '✏️ .اسم الاسم الجديد');
     await sock.sendMessage(jid, { text: lines.join('\n') });
+    return true;
+  }
+
+  if (trimmed === '.مواقيت الصلاة') {
+    try {
+      const schedule = await getPrayerSchedule();
+      const t = schedule.timings;
+      await sock.sendMessage(jid, {
+        text: [
+          '🌅 مواقيت الصلاة — ' + config.prayerCity,
+          '📅 التاريخ: ' + schedule.date,
+          '🌄 الفجر: ' + String(t.Fajr).slice(0, 5),
+          '☀️ الظهر: ' + String(t.Dhuhr).slice(0, 5),
+          '🌤️ العصر: ' + String(t.Asr).slice(0, 5),
+          '🌇 المغرب: ' + String(t.Maghrib).slice(0, 5),
+          '🌙 العشاء: ' + String(t.Isha).slice(0, 5)
+        ].join('\\n')
+      });
+    } catch {
+      await sock.sendMessage(jid, { text: '❌ تعذر جلب مواقيت الصلاة الآن. حاول مرة أخرى لاحقًا.' });
+    }
     return true;
   }
 
