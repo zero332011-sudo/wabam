@@ -24,9 +24,42 @@ const getTargetLibrary = () => {
   const shared = readSharedLibrary();
   return Object.keys(shared).length ? shared : getDB().anime;
 };
+function getEpisodes(section) {
+  if (Array.isArray(section)) return section;
+  return Array.isArray(section?.episodes) ? section.episodes : [];
+}
+async function downloadTelegramFile(fileId) {
+  const token = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) throw new Error('رمز بوت التليجرام غير مضبوط في الاستضافة.');
+  const infoResponse = await fetch('https://api.telegram.org/bot' + token + '/getFile?file_id=' + encodeURIComponent(fileId));
+  const info = await infoResponse.json();
+  if (!infoResponse.ok || !info.ok || !info.result?.file_path) throw new Error('تعذر الحصول على ملف الوسائط من التليجرام.');
+  const fileResponse = await fetch('https://api.telegram.org/file/bot' + token + '/' + info.result.file_path);
+  if (!fileResponse.ok) throw new Error('تعذر تنزيل ملف الوسائط.');
+  return Buffer.from(await fileResponse.arrayBuffer());
+}
+async function sendTelegramMediaToWhatsApp(sock, jid, media, caption) {
+  const buffer = await downloadTelegramFile(media.fileId);
+  if (media.type === 'photo') return sock.sendMessage(jid, { image: buffer, caption });
+  if (media.type === 'video') return sock.sendMessage(jid, { video: buffer, caption });
+  if (media.type === 'animation') return sock.sendMessage(jid, { video: buffer, gifPlayback: true, caption });
+  if (media.type === 'audio') return sock.sendMessage(jid, { audio: buffer, mimetype: media.mimeType || 'audio/mpeg' });
+  if (media.type === 'voice') return sock.sendMessage(jid, { audio: buffer, mimetype: 'audio/ogg; codecs=opus', ptt: true });
+  return sock.sendMessage(jid, { document: buffer, fileName: media.fileName || 'anime-media', mimetype: media.mimeType || 'application/octet-stream', caption });
+}
+async function sendLibraryCover(sock, jid, media, caption) {
+  if (!media?.fileId) return false;
+  await sendTelegramMediaToWhatsApp(sock, jid, media, caption);
+  return true;
+}
+
 
 async function sendEpisode(sock, jid, anime, section, episode) {
   const caption = `🍥 ${anime} — ${section}\n🎬 الحلقة ${episode.number}`;
+  if (episode.media?.fileId) {
+    await sendTelegramMediaToWhatsApp(sock, jid, episode.media, caption);
+    return true;
+  }
   if (episode.url && /^https?:\/\//i.test(episode.url)) {
     const isVideo = !episode.mimeType || episode.mimeType.startsWith('video/');
     if (isVideo) await sock.sendMessage(jid, { video: { url: episode.url }, caption });
@@ -59,7 +92,7 @@ export async function animeCommand(sock, m, text) {
   }
   if (cmd === '.حلقات' || cmd === '.حلقه') {
     const [anime, section, episodeNo] = parsePair(parts.slice(1).join(' '));
-    const episodes = db.anime[anime]?.sections?.[section];
+    const episodes = getEpisodes(getTargetLibrary()[anime]?.sections?.[section] ?? db.anime[anime]?.sections?.[section]);
     if (!episodes) {
       await sock.sendMessage(jid, { text: '❌ الأنمي أو القسم غير موجود. الصيغة: .حلقات اسم الأنمي|اسم القسم' });
       return true;
@@ -159,17 +192,23 @@ export async function animeMessage(sock, m, text) {
     if (!name) { await sock.sendMessage(jid, { text: '❌ رقم الأنمي غير صحيح. أرسل رقمًا من القائمة.' }); return true; }
     const sections = Object.entries(getTargetLibrary()[name]?.sections || {});
     if (!sections.length) { selections.delete(key); await sock.sendMessage(jid, { text: '📁 لا توجد أقسام لهذا الأنمي حتى الآن.' }); return true; }
-    selections.set(jid, { step: 'section', anime: name, sections });
-    await sock.sendMessage(jid, { text: '🍥 ' + name + '\n\n' + sections.map(([s], i) => `${i + 1}. 📁 ${s}`).join('\n') + '\n\n🔢 أرسل رقم القسم.' });
+    selections.set(key, { step: 'section', anime: name, sections });
+    const caption = '🍥 ' + name + '\n\n' + sections.map(([s], i) => `${i + 1}. 📁 ${s}`).join('\n') + '\n\n🔢 أرسل رقم القسم.';
+    const cover = getTargetLibrary()[name]?.image;
+    if (cover?.fileId) await sendLibraryCover(sock, jid, cover, caption);
+    else await sock.sendMessage(jid, { text: caption });
     return true;
   }
   if (state.step === 'section') {
     const selected = state.sections[choice - 1];
     if (!selected) { await sock.sendMessage(jid, { text: '❌ رقم القسم غير صحيح.' }); return true; }
-    const episodes = Array.isArray(selected[1]) ? selected[1] : [];
+    const episodes = getEpisodes(selected[1]);
     if (!episodes.length) { selections.delete(key); await sock.sendMessage(jid, { text: '🎬 لا توجد حلقات في هذا القسم.' }); return true; }
-    selections.set(jid, { step: 'episode', anime: state.anime, section: selected[0], episodes });
-    await sock.sendMessage(jid, { text: '📺 ' + state.anime + ' — ' + selected[0] + '\n\n' + episodes.map((e, i) => `${i + 1}. ▶️ الحلقة ${e.number}`).join('\n') + '\n\n🔢 أرسل رقم الحلقة.' });
+    selections.set(key, { step: 'episode', anime: state.anime, section: selected[0], episodes });
+    const caption = '📺 ' + state.anime + ' — ' + selected[0] + '\n\n' + episodes.map((e, i) => `${i + 1}. ▶️ الحلقة ${e.number}`).join('\n') + '\n\n🔢 أرسل رقم الحلقة.';
+    const sectionData = selected[1];
+    if (!Array.isArray(sectionData) && sectionData?.image?.fileId) await sendLibraryCover(sock, jid, sectionData.image, caption);
+    else await sock.sendMessage(jid, { text: caption });
     return true;
   }
   if (state.step === 'episode') {
