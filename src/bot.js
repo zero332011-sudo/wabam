@@ -45,7 +45,8 @@ async function sendTelegramMedia(ctx, media, caption) {
   if (media.type === 'photo') return ctx.replyWithPhoto(media.fileId, { caption });
   if (media.type === 'video') return ctx.replyWithVideo(media.fileId, { caption });
   if (media.type === 'animation') return ctx.replyWithAnimation(media.fileId, { caption });
-  if (media.type === 'audio' || media.type === 'voice') return ctx.replyWithAudio(media.fileId, { caption });
+  if (media.type === 'voice') return ctx.replyWithVoice(media.fileId, { caption });
+  if (media.type === 'audio') return ctx.replyWithAudio(media.fileId, { caption });
   return ctx.replyWithDocument(media.fileId, { caption });
 }
 const ownerOnly = ctx => ctx.from?.id === config.ownerId;
