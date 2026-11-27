@@ -139,13 +139,29 @@ export async function showMedia(sock, message) {
       await sock.sendMessage(jid, { text: '⚠️ نوع الوسائط ده مش مدعوم في .عرض.' });
       return true;
     }
-    await sendPayload(sock, jid, {
+    const record = {
       kind: found.kind,
       caption: found.value.caption || '',
       mimetype: found.value.mimetype || '',
       fileName: found.value.fileName || '',
       ptt: !!found.value.ptt
-    }, buffer);
+    };
+    // Save a successful fallback download for future .عرض requests.
+    try {
+      const dir = cacheDirectory();
+      await fs.mkdir(dir, { recursive: true });
+      const hash = createHash('sha256').update(cacheKey(jid, ctx.stanzaId)).digest('hex');
+      const filePath = path.join(dir, hash + '.' + extensionFor(record.kind, record.mimetype));
+      await fs.writeFile(filePath + '.tmp', buffer);
+      await fs.rename(filePath + '.tmp', filePath);
+      const db = getDB();
+      db.mediaCache ||= {};
+      db.mediaCache[cacheKey(jid, ctx.stanzaId)] = { ...record, filePath, createdAt: Date.now() };
+      saveDB(db);
+    } catch (cacheError) {
+      console.error('Persist quoted media:', cacheError?.message || cacheError);
+    }
+    await sendPayload(sock, jid, record, buffer);
     return true;
   } catch (error) {
     console.error('Show media:', error?.message || error);
