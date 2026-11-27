@@ -61,11 +61,8 @@ async function sendDailyAwards(sock, groups, day, state) {
     if (state.dailySent[group.id] === day) continue;
     const ranking = sortMembers(getDB().messageStats?.[group.id]?.daily?.[day]);
     if (!ranking.length) {
-      const db = getDB();
-      db.users[winner] ||= { jid: winner, nickname: 'عضو جديد', rank: 1, bank: 40, wallet: 0, hearts: 3, warnings: 0 };
-      db.users[winner].wallet = (Number(db.users[winner].wallet) || 0) + 100;
       state.dailySent[group.id] = day;
-      saveDB(db);
+      saveDB(getDB());
       continue;
     }
     const [winner, count] = ranking[0];
@@ -78,11 +75,14 @@ async function sendDailyAwards(sock, groups, day, state) {
           `💬 عدد رسائله: ${count}`,
           '💰 الجائزة: 100 ج',
           '✅ تمت إضافة الجائزة إلى محفظة الفائز.'
-        ].join('\n'),
+        ].join('\\n'),
         mentions: [winner]
       });
+      const db = getDB();
+      db.users[winner] ||= { jid: winner, nickname: 'عضو جديد', rank: 1, bank: 40, wallet: 0, hearts: 3, warnings: 0 };
+      db.users[winner].wallet = (Number(db.users[winner].wallet) || 0) + 100;
       state.dailySent[group.id] = day;
-      saveDB(getDB());
+      saveDB(db);
     } catch (error) {
       complete = false;
       console.error(`تعذر إرسال نتيجة اليوم إلى ${group.id}:`, error?.message || error);
