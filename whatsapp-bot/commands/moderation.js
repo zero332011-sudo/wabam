@@ -34,15 +34,25 @@ export async function moderationCommand(sock, m, text) {
   else if (normalized.startsWith('.فك_كتم-') || normalized.startsWith('.فك-كتم-')) cmd = '.فك كتم';
   else if (normalized.startsWith('.فك كتم')) cmd = '.فك كتم';
   else if (normalized.startsWith('.طرد-')) cmd = '.طرد';
-  else if (normalized === '.كتم الجروب' || normalized.startsWith('.كتم الجروب ')) cmd = '.كتم الجروب';
+  else if (normalized === '.كتم الجروب' || normalized.startsWith('.كتم الجروب ') || normalized === '.كتمل الجروب' || normalized.startsWith('.كتمل الجروب ')) cmd = '.كتم الجروب';
   else if (normalized === '.فك الجروب' || normalized.startsWith('.فك الجروب ')) cmd = '.فك الجروب';
-  if (!['.كتم', '.فك', '.فك_كتم', '.فك كتم', '.كتم الجروب', '.فك الجروب', '.طرد'].includes(cmd)) return false;
+  if (normalized === '.منشن') cmd = '.منشن';
+  if (!['.كتم', '.فك', '.فك_كتم', '.فك كتم', '.كتم الجروب', '.فك الجروب', '.طرد', '.منشن'].includes(cmd)) return false;
   if (!jid.endsWith('@g.us')) {
     await sock.sendMessage(jid, { text: '🛡️ هذا الأمر متاح داخل المجموعات فقط.' });
     return true;
   }
   if (!await canManage(sock, jid, sender)) {
     await sock.sendMessage(jid, { text: '⛔ الأمر للمشرفين أو الرتب الإدارية والمطور فقط.' });
+    return true;
+  }
+  if (cmd === '.منشن') {
+    const meta = await sock.groupMetadata(jid);
+    const members = meta.participants.map(p => p.id).filter(Boolean);
+    await sock.sendMessage(jid, {
+      text: '📢 منشن جماعي لأعضاء المجموعة\\n' + members.map(id => '@' + id.split('@')[0]).join(' '),
+      mentions: members
+    });
     return true;
   }
   if (cmd === '.كتم الجروب' || cmd === '.فك الجروب') {
