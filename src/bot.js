@@ -43,8 +43,10 @@ const animeAdminKeyboard = () => new InlineKeyboard()
   .text('🗑️ حذف أنمي', 'anime:delete').row()
   .text('↩️ لوحة الإدارة', 'admin:home');
 const ownerDeny = async ctx => {
-  if (ctx.callbackQuery) await ctx.answerCallbackQuery({ text: 'هذه الوظيفة للمالك فقط.' });
-  else await ctx.reply('⛔ هذه الوظيفة للمالك فقط.');
+  if (ctx.callbackQuery) {
+    try { await ctx.answerCallbackQuery({ text: 'هذه الوظيفة للمالك فقط.' }); } catch {}
+  }
+  await ctx.reply('⛔ هذه الوظيفة للمالك فقط.');
 };
 async function showHome(ctx) {
   await ctx.reply('🌌 WABAM\nمرحبًا بك! اختر الخدمة:', { reply_markup: mainKeyboard() });
