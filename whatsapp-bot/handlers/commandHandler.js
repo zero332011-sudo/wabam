@@ -23,6 +23,6 @@ export async function commandHandler(sock, m, text) {
     () => generalCommand(sock, m, text)
   ];
   for (const handler of handlers) if (await handler()) return true;
-  await sock.sendMessage(m.key.remoteJid, { text: '❌ أمر غير معروف. اكتب .الاوامر' });
+  await sock.sendMessage(m.key.remoteJid, { text: '❌ أمر غير معروف. اكتب .رئيسيه' });
   return false;
 }
