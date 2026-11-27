@@ -310,6 +310,7 @@ bot.callbackQuery('admin:general', async ctx => {
 });
 bot.callbackQuery('anime:add', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'anime-name', '➕ اكتب اسم الأنمي الجديد.'); });
 bot.callbackQuery('anime:section', async ctx => {
+  if (!ownerOnly(ctx)) return ownerDeny(ctx);
   await ctx.answerCallbackQuery();
   const picker = animePicker('anime:section:pick:');
   if (!picker.anime.length) return ctx.reply('لا توجد أنميات بعد. أضف أنمي أولًا.', { reply_markup: picker.keyboard });
@@ -324,6 +325,7 @@ bot.callbackQuery(/^anime:section:pick:(\d+)$/, async ctx => {
   await ctx.reply('📁 اكتب اسم القسم الجديد داخل: ' + item[0]);
 });
 bot.callbackQuery('anime:episode', async ctx => {
+  if (!ownerOnly(ctx)) return ownerDeny(ctx);
   await ctx.answerCallbackQuery();
   const picker = animePicker('anime:episode:anime:');
   if (!picker.anime.length) return ctx.reply('لا توجد أنميات بعد. أضف أنمي وقسمًا أولًا.', { reply_markup: picker.keyboard });
