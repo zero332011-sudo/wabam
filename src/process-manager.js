@@ -11,11 +11,11 @@ let logs = [];
 let pairingNotifier = async () => {};
 
 function logLine(line) {
-  const value = String(line).replace(/\x1b\\[[0-9;]*m/g, '').slice(0, 1600);
+  const value = String(line).replace(/\x1b\[[0-9;]*m/g, '').slice(0, 1600);
   logs.push(value);
   if (logs.length > 80) logs.shift();
   console.log('[WhatsApp]', value);
-  const match = value.match(/رمز ربط واتساب:\\s*([A-Z0-9-]+)/i);
+  const match = value.match(/رمز ربط واتساب:\s*([A-Z0-9-]+)/i);
   if (match && chatIdForCode) pairingNotifier(chatIdForCode, match[1]).catch(err => console.error(err));
 }
 
@@ -24,7 +24,7 @@ function pipeLines(stream) {
   stream.setEncoding('utf8');
   stream.on('data', chunk => {
     pending += chunk;
-    const lines = pending.split(/\\r?\\n/);
+    const lines = pending.split(/\r?\n/);
     pending = lines.pop() || '';
     lines.forEach(logLine);
   });
@@ -39,7 +39,7 @@ export function getLogs() { return logs.slice(-20); }
 
 export async function startWhatsApp(number, chatId, config) {
   if (child && child.exitCode === null) throw new Error('بوت واتساب يعمل بالفعل.');
-  const digits = String(number).replace(/\\D/g, '');
+  const digits = String(number).replace(/\D/g, '');
   if (digits.length < 10 || digits.length > 15) throw new Error('رقم غير صحيح. أرسله مع مفتاح الدولة.');
   const botDir = path.join(root, 'whatsapp-bot');
   const entry = path.join(botDir, 'index.js');
@@ -50,14 +50,22 @@ export async function startWhatsApp(number, chatId, config) {
   logs = [];
   child = spawn(process.execPath, [entry], {
     cwd: botDir,
-    env: { ...process.env, PAIRING_NUMBER: digits, OWNER_NUMBER: config.whatsappOwnerNumber || digits,
-      DATA_DIR: dataDir, MEDIA_DIR: path.join(dataDir, 'anime', 'media') },
+    env: {
+      ...process.env,
+      PAIRING_NUMBER: digits,
+      OWNER_NUMBER: config.whatsappOwnerNumber || digits,
+      DATA_DIR: dataDir,
+      MEDIA_DIR: path.join(dataDir, 'anime', 'media')
+    },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   pipeLines(child.stdout);
   pipeLines(child.stderr);
   child.on('error', err => logLine('تعذر تشغيل بوت واتساب: ' + err.message));
-  child.on('exit', (code, signal) => { logLine('انتهى بوت واتساب. code=' + code + ', signal=' + signal); child = null; });
+  child.on('exit', (code, signal) => {
+    logLine('انتهى بوت واتساب. code=' + code + ', signal=' + signal);
+    child = null;
+  });
   logLine('تم بدء عملية واتساب. انتظر رمز الربط.');
 }
 
