@@ -9,7 +9,7 @@ const defaults = () => ({
   users: {}, groups: {}, developers: [], ownerJids: [], botName: '', messageStats: {}, welcomedPrivate: [],
   communityAwards: { lastDailyRun: '', lastWeeklyRun: '', dailySent: {}, weeklySent: {} },
   muted: {}, blockedWords: [], blockedEmojis: [], blockedStickers: [], anime: {},
-  games: {}, marriages: {}, transfers: []
+  games: {}, marriages: {}, transfers: [], mediaCache: {}
 });
 
 fs.mkdirSync(dir, { recursive: true });
@@ -36,7 +36,7 @@ function normalize(data = {}) {
     muted: data.muted || {}, anime: data.anime || {}, games: data.games || {},
     blockedWords: data.blockedWords || [], blockedEmojis: data.blockedEmojis || [],
     blockedStickers: data.blockedStickers || [], marriages: data.marriages || {},
-    transfers: data.transfers || []
+    transfers: data.transfers || [], mediaCache: data.mediaCache || {}
   };
 }
 
