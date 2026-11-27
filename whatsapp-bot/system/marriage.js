@@ -11,9 +11,9 @@ export async function marriageCommand(sock, m, cmd) {
   if (second >= first) second++;
   const couple = [members[first], members[second]];
   if (cmd === 'زواج') {
-    await sock.sendMessage(jid, { text: `╭━━━〔 💍 زواج عشوائي 〕━━━╮\n┃ 🎉 تم اختيار عروسين جديدين!\n┃ 👰 @${couple[0].split('@')[0]}\n┃ 🤵 @${couple[1].split('@')[0]}\n┃ ❤️ ألف مبروك!\n╰━━━━━━━━━━━━━━━━━━━━╯`, mentions: couple });
+    await sock.sendMessage(jid, { text: `╭━━━〔 💍 قرعة الحب من WABAM 〕━━━╮\n┃ 🎊 تم عقد قران بالقرعة!\n┃ 👰 @${couple[0].split('@')[0]}\n┃ 🤵 @${couple[1].split('@')[0]}\n┃ 💐 المأذون مستعجل والقاعة محجوزة!\n┃ 😂 الاعتراضات بعد شهر العسل.\n╰━━━━━━━━━━━━━━━━━━━━━━━━╯`, mentions: couple });
   } else {
-    await sock.sendMessage(jid, { text: `╭━━━〔 💔 طلاق عشوائي 〕━━━╮\n┃ 😂 حدثت كارثة زوجية!\n┃ 💔 @${couple[0].split('@')[0]}\n┃ 💔 @${couple[1].split('@')[0]}\n┃ 🥀 تم الطلاق!\n╰━━━━━━━━━━━━━━━━━━━━╯`, mentions: couple });
+    await sock.sendMessage(jid, { text: `╭━━━〔 💔 محكمة WABAM الأسرية 〕━━━╮\n┃ ⚖️ المحكمة قررت الانفصال!\n┃ 💔 @${couple[0].split('@')[0]}\n┃ 💔 @${couple[1].split('@')[0]}\n┃ 🧾 السبب: خلاف على آخر قطعة بيتزا.\n┃ 😂 الحكم نهائي… لحد القرعة الجاية!\n╰━━━━━━━━━━━━━━━━━━━━━━━━╯`, mentions: couple });
   }
   return true;
 }
