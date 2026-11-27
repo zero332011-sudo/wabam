@@ -1,18 +1,22 @@
 # WABAM setup
 
-WABAM is a Telegram control panel that runs the WhatsApp Anime Bot on the same host.
+WABAM runs a Telegram bot and a WhatsApp bot from the same Node.js host.
 
 ## Deploy
 1. Use a host with Node.js 20+, child-process support, and persistent storage.
-2. Set BOT_TOKEN (from BotFather), OWNER_TELEGRAM_ID (your numeric Telegram ID), WA_OWNER_NUMBER (developer WhatsApp number), and WABAM_DATA_DIR (persistent mount path such as /data).
-3. Run `npm install` and `npm start`.
-4. Open the Telegram bot and send `/start`.
-5. Tap the pairing button, send the WhatsApp number in international format, and wait for the pairing code in Telegram.
-6. In WhatsApp, open Linked devices > Link a device > Link with phone number and enter the code.
+2. Set `BOT_TOKEN`, `OWNER_TELEGRAM_ID`, `WA_OWNER_NUMBER`, and `WABAM_DATA_DIR` in the host Environment Variables.
+3. Run `npm install` and `npm start` from the repository root.
+4. Open the Telegram bot and send `/start` for the public anime library.
+5. Send `/admin` as the owner to open administration. WhatsApp pairing and process controls are only inside Admin > WhatsApp.
+6. Add anime, sections, and episodes using direct video URLs in Admin > Anime.
+
+## Persistent data and WhatsApp session
+- WhatsApp authentication is stored below `WABAM_DATA_DIR/whatsapp/auth_info_baileys`.
+- WhatsApp database is stored below `WABAM_DATA_DIR/whatsapp/database`.
+- Shared anime library is stored below `WABAM_DATA_DIR/shared/anime-library.json`.
+- Keep `WABAM_DATA_DIR` on a persistent volume. Do not delete or replace the WhatsApp auth folder during code updates; preserving it normally avoids pairing again.
 
 ## Security
-- Only OWNER_TELEGRAM_ID can use WABAM.
-- WhatsApp session files live in WABAM_DATA_DIR and must never be committed.
-- Never publish .env, auth_info_baileys, database files, logs, or tokens.
-- Use persistent storage or the WhatsApp session will be lost when the host is replaced.
-- Keep the Telegram bot private and do not share pairing codes.
+- Only `OWNER_TELEGRAM_ID` can open the admin panel or pair/control WhatsApp.
+- Never commit `.env`, auth files, database files, logs, tokens, or pairing codes.
+- Episode URLs must be direct video links accessible from both Telegram and the WhatsApp host.

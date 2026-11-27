@@ -21,7 +21,9 @@ export function isDeveloper(jid) {
   const db = getDB();
   return isOwner(jid) || db.developers.some(x => jidNumber(x) === jidNumber(jid) || x === jid);
 }
-
+export function hasRankPermission(jid) {
+  return isDeveloper(jid) || Number(getUser(jid).rank) >= 17;
+}
 export function isBotManager(jid) {
-  return isDeveloper(jid) || Number(getUser(jid).rank) <= 5;
+  return hasRankPermission(jid);
 }

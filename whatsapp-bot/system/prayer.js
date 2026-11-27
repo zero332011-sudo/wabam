@@ -30,6 +30,8 @@ async function getTimings() {
   return timingsCache;
 }
 
+export async function getPrayerSchedule() { return getTimings(); }
+
 export async function checkPrayer(sock) {
   if (checking) return;
   checking = true;
