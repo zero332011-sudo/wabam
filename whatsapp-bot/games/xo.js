@@ -103,9 +103,20 @@ export async function xoMessage(sock, m, text) {
     game.players.add(who);
     game.turn = game.owner;
     await sock.sendMessage(jid, {
-      text: arenaMessage(game, `🎯 الدور الأول: ❌ ${mention(game.turn)}\nاكتب: .لعب رقم الخانة (1-9)`),
+      text: arenaMessage(game, `🎯 الدور على: ❌ ${mention(game.turn)}\n✍️ اكتب رقم الخانة فقط (1-9)`),
       mentions: gameMentions(game)
     });
+    return true;
+  }
+  // Accept a bare number (1-9), Arabic-Indic digits, or WhatsApp keycap digits.
+  // This matches the instruction shown on the arena, so players do not need a command.
+  const rawMove = text.trim()
+    .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[️⃣︎]/g, '');
+  const keycapMoves = { '1⃣':'1', '2⃣':'2', '3⃣':'3', '4⃣':'4', '5⃣':'5', '6⃣':'6', '7⃣':'7', '8⃣':'8', '9⃣':'9' };
+  const move = keycapMoves[rawMove] || rawMove;
+  if (/^[1-9]$/.test(move)) {
+    await playXO(sock, m, move);
     return true;
   }
   return false;
@@ -175,7 +186,7 @@ export async function playXO(sock, m, n) {
     game.turn = [...game.players].find(player => player !== who);
     const symbol = game.turn === game.owner ? '❌' : '⭕';
     await sock.sendMessage(jid, {
-      text: arenaMessage(game, `🎯 الدور الآن: ${symbol} ${mention(game.turn)}\nاكتب: .لعب رقم الخانة (1-9)`),
+      text: arenaMessage(game, `🎯 الدور الآن: ${symbol} ${mention(game.turn)}\n✍️ اكتب رقم الخانة فقط (1-9)`),
       mentions: gameMentions(game)
     });
   }
