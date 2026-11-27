@@ -169,7 +169,7 @@ export async function generalCommand(sock, m, text) {
     const mention = '@' + target.split('@')[0].split(':')[0];
     await sock.sendMessage(jid, {
       text: '📢 تنبيه للمجموعة\n' + Array(count).fill(mention).join(' '),
-      mentions: [target]
+      mentions: Array(count).fill(target)
     });
     return true;
   }
