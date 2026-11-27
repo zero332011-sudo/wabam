@@ -158,7 +158,7 @@ export async function animeMessage(sock, m, text) {
     const name = state.animeNames[choice - 1];
     if (!name) { await sock.sendMessage(jid, { text: '❌ رقم الأنمي غير صحيح. أرسل رقمًا من القائمة.' }); return true; }
     const sections = Object.entries(getTargetLibrary()[name]?.sections || {});
-    if (!sections.length) { selections.delete(jid); await sock.sendMessage(jid, { text: '📁 لا توجد أقسام لهذا الأنمي حتى الآن.' }); return true; }
+    if (!sections.length) { selections.delete(key); await sock.sendMessage(jid, { text: '📁 لا توجد أقسام لهذا الأنمي حتى الآن.' }); return true; }
     selections.set(jid, { step: 'section', anime: name, sections });
     await sock.sendMessage(jid, { text: '🍥 ' + name + '\n\n' + sections.map(([s], i) => `${i + 1}. 📁 ${s}`).join('\n') + '\n\n🔢 أرسل رقم القسم.' });
     return true;
@@ -167,7 +167,7 @@ export async function animeMessage(sock, m, text) {
     const selected = state.sections[choice - 1];
     if (!selected) { await sock.sendMessage(jid, { text: '❌ رقم القسم غير صحيح.' }); return true; }
     const episodes = Array.isArray(selected[1]) ? selected[1] : [];
-    if (!episodes.length) { selections.delete(jid); await sock.sendMessage(jid, { text: '🎬 لا توجد حلقات في هذا القسم.' }); return true; }
+    if (!episodes.length) { selections.delete(key); await sock.sendMessage(jid, { text: '🎬 لا توجد حلقات في هذا القسم.' }); return true; }
     selections.set(jid, { step: 'episode', anime: state.anime, section: selected[0], episodes });
     await sock.sendMessage(jid, { text: '📺 ' + state.anime + ' — ' + selected[0] + '\n\n' + episodes.map((e, i) => `${i + 1}. ▶️ الحلقة ${e.number}`).join('\n') + '\n\n🔢 أرسل رقم الحلقة.' });
     return true;
@@ -175,7 +175,7 @@ export async function animeMessage(sock, m, text) {
   if (state.step === 'episode') {
     const episode = state.episodes[choice - 1];
     if (!episode) { await sock.sendMessage(jid, { text: '❌ رقم الحلقة غير صحيح.' }); return true; }
-    selections.delete(jid);
+    selections.delete(key);
     try {
       const sent = await sendEpisode(sock, jid, state.anime, state.section, episode);
       if (!sent) await sock.sendMessage(jid, { text: '❌ الحلقة غير متاحة حاليًا.' });
