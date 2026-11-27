@@ -26,7 +26,7 @@ const commandHub = name => [
   '👤 .رئيسيه — أوامر الأعضاء',
   '🎮 .الألعاب — قائمة الألعاب',
   '🏦 .بنك — البنك والمحفظة'
-].join('\\n');
+].join('\n');
 
 const mainMenu = name => [
   `🌌 ${name}`,
@@ -41,7 +41,7 @@ const mainMenu = name => [
   '🌅 .صلاه — عرض مواقيت الصلاة في سوهاج',
   '🍥 .انمي — فتح مكتبة الأنمي',
   '🏅 .ترقيه — ترقية عضو باستخدام رقم الرتبة'
-].join('\\n');
+].join('\n');
 
 const gamesMenu = [
   '🎮 قائمة الألعاب',
@@ -221,7 +221,7 @@ export async function generalCommand(sock, m, text) {
       target, sender, m.key.participant, m.key.participantPn, m.key.participantAlt,
       m.key.remoteJid
     ].filter(Boolean));
-    const digits = value => String(value || '').split('@')[0].split(':')[0].replace(/\\D/g, '');
+    const digits = value => String(value || '').split('@')[0].split(':')[0].replace(/\D/g, '');
     if (jid.endsWith('@g.us')) {
       try {
         const metadata = await sock.groupMetadata(jid);
