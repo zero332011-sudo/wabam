@@ -5,7 +5,14 @@ import { isDeveloper, hasRankPermission, isOwner } from '../utils/permissions.js
 import { showMedia } from '../system/media.js';
 import { getPrayerSchedule } from '../system/prayer.js';
 
-function formatPrayerTime(value) {\n  const [h, m] = String(value).slice(0, 5).split(':').map(Number);\n  const suffix = h >= 12 ? 'مساءً' : 'صباحًا';\n  const hour = h % 12 || 12;\n  return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;\n}\n\nfunction cairoDateKey(date = new Date()) {
+function formatPrayerTime(value) {
+  const [h, m] = String(value).slice(0, 5).split(':').map(Number);
+  const suffix = h >= 12 ? 'مساءً' : 'صباحًا';
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+function cairoDateKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: config.timezone, year: 'numeric', month: '2-digit', day: '2-digit'
   }).formatToParts(date);
@@ -77,9 +84,9 @@ export async function generalCommand(sock, m, text) {
     return true;
   }
 
-  if (text.replace(/\s+/g, ' ') === '.اوامر المطور') {
-    if (!hasRankPermission(sender)) {
-      await sock.sendMessage(jid, { text: '⛔ هذه القائمة للرتب من 17 إلى 20 والمطورين فقط.' });
+  if (trimmed === '.المطور') {
+    if (!isDeveloper(sender)) {
+      await sock.sendMessage(jid, { text: '⛔ هذه القائمة للمطورين فقط.' });
       return true;
     }
     const lines = [
@@ -92,7 +99,8 @@ export async function generalCommand(sock, m, text) {
       '📢 .منشن — منشن أعضاء المجموعة',
       '🔒 .كتمل الجروب | 🔓 .فك الجروب'
     ];
-    lines.push('🖼️ .عرض — عرض الوسائط');\n    lines.push('✏️ .اسم الاسم الجديد — تغيير اسم البوت');
+    lines.push('🖼️ .عرض — عرض الوسائط');
+    lines.push('✏️ .اسم الاسم الجديد — تغيير اسم البوت');
     await sock.sendMessage(jid, { text: lines.join('\n') });
     return true;
   }
