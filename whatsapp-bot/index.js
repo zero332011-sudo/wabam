@@ -27,7 +27,7 @@ async function startBot() {
     }
 
     const dataRoot = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || '.';
-    const instanceNumber = String(process.env.INSTANCE_NUMBER || phoneNumber).replace(/\\D/g, '');
+    const instanceNumber = String(process.env.INSTANCE_NUMBER || phoneNumber).replace(/\D/g, '');
     const authDir = path.join(dataRoot, 'instances', instanceNumber, 'auth_info_baileys');
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const sock = makeWASocket({
