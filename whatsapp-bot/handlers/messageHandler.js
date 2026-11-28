@@ -23,12 +23,12 @@ function activityPeriods(date = new Date()) {
 export async function messageHandler(sock, update) {
   // Secondary numbers are relay-only: they do not run WABAM commands or group systems.
   if (process.env.BOT_ROLE === 'relay') {
-    const primary = String(process.env.PRIMARY_BOT_NUMBER || '').replace(/\\D/g, '');
+    const primary = String(process.env.PRIMARY_BOT_NUMBER || '').replace(/\D/g, '');
     for (const m of update.messages || []) {
       if (!m.message || m.key.fromMe || m.key.remoteJid === 'status@broadcast') continue;
       const jid = m.key.remoteJid;
       const text = getText(m).trim();
-      if (!text || !/^\\.(?:اوامر|الأوامر|رئيسيه|رئيسية|مساعدة|معلومات)$/u.test(text)) continue;
+      if (!text || !/^\.(?:اوامر|الأوامر|رئيسيه|رئيسية|مساعدة|معلومات)$/u.test(text)) continue;
       if (!primary) {
         await sock.sendMessage(jid, { text: '⚠️ لم يتم تحديد رقم البوت الأساسي بعد. تواصل مع الإدارة.' });
         continue;
