@@ -79,7 +79,7 @@ async function spawnOne(number, config) {
   const entry = path.join(botDir, 'index.js');
   const dataDir = path.resolve(config.dataDir, 'whatsapp');
   const sharedDir = path.resolve(config.dataDir, 'shared');
-  await mkdir(path.join(dataDir, 'instances', number), { recursive: true });
+  const instanceDir = path.join(dataDir, 'instances', number);\n  await mkdir(instanceDir, { recursive: true });\n  const oldAuthDir = path.join(dataDir, 'auth_info_baileys');\n  const newAuthDir = path.join(instanceDir, 'auth_info_baileys');\n  if (store.primaryNumber === number && fs.existsSync(oldAuthDir) && !fs.existsSync(newAuthDir)) {\n    fs.cpSync(oldAuthDir, newAuthDir, { recursive: true });\n    logLine(number, 'تم نقل جلسة واتساب القديمة إلى مجلد الرقم المستقل.');\n  }
   await mkdir(sharedDir, { recursive: true });
   pairingChats.set(number, instance.chatId || null);
   logs.set(number, []);
@@ -119,7 +119,7 @@ export function listWhatsAppInstances(config = activeConfig) {
   }));
 }
 export function getPrimaryNumber(config = activeConfig) { return readStore(config).primaryNumber; }
-export async function startWhatsApp(number, chatId, config = activeConfig) {
+export async function restoreWhatsApp(config = activeConfig) {\n  activeConfig = config;\n  const store = readStore(config);\n  for (const number of Object.keys(store.instances)) await spawnOne(number, config);\n  return Object.keys(store.instances).length;\n}\nexport async function startWhatsApp(number, chatId, config = activeConfig) {
   activeConfig = config;
   const value = digits(number);
   if (value.length < 10 || value.length > 15) throw new Error('رقم غير صحيح. أرسله مع مفتاح الدولة.');
