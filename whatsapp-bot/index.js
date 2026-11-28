@@ -27,7 +27,8 @@ async function startBot() {
     }
 
     const dataRoot = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || '.';
-    const authDir = path.join(dataRoot, 'auth_info_baileys');
+    const instanceNumber = String(process.env.INSTANCE_NUMBER || phoneNumber).replace(/\\D/g, '');
+    const authDir = path.join(dataRoot, 'instances', instanceNumber, 'auth_info_baileys');
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const sock = makeWASocket({
       auth: state,
@@ -117,11 +118,11 @@ async function startBot() {
       if (connection === 'open') {
         starting = false;
         console.log('✅ تم الاتصال بواتساب بنجاح');
-        if (!prayerStarted) {
+        if (process.env.BOT_ROLE !== 'relay' && !prayerStarted) {
           prayerStarted = true;
           startPrayerSystem(sock);
         }
-        if (!stopCommunityAwards) stopCommunityAwards = startCommunityAwards(sock);
+        if (process.env.BOT_ROLE !== 'relay' && !stopCommunityAwards) stopCommunityAwards = startCommunityAwards(sock);
       }
 
       if (connection === 'close') {
