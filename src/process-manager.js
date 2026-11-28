@@ -79,7 +79,14 @@ async function spawnOne(number, config) {
   const entry = path.join(botDir, 'index.js');
   const dataDir = path.resolve(config.dataDir, 'whatsapp');
   const sharedDir = path.resolve(config.dataDir, 'shared');
-  const instanceDir = path.join(dataDir, 'instances', number);\n  await mkdir(instanceDir, { recursive: true });\n  const oldAuthDir = path.join(dataDir, 'auth_info_baileys');\n  const newAuthDir = path.join(instanceDir, 'auth_info_baileys');\n  if (store.primaryNumber === number && fs.existsSync(oldAuthDir) && !fs.existsSync(newAuthDir)) {\n    fs.cpSync(oldAuthDir, newAuthDir, { recursive: true });\n    logLine(number, 'تم نقل جلسة واتساب القديمة إلى مجلد الرقم المستقل.');\n  }
+  const instanceDir = path.join(dataDir, 'instances', number);
+  await mkdir(instanceDir, { recursive: true });
+  const oldAuthDir = path.join(dataDir, 'auth_info_baileys');
+  const newAuthDir = path.join(instanceDir, 'auth_info_baileys');
+  if (store.primaryNumber === number && fs.existsSync(oldAuthDir) && !fs.existsSync(newAuthDir)) {
+    fs.cpSync(oldAuthDir, newAuthDir, { recursive: true });
+    logLine(number, 'تم نقل جلسة واتساب القديمة إلى مجلد الرقم المستقل.');
+  }
   await mkdir(sharedDir, { recursive: true });
   pairingChats.set(number, instance.chatId || null);
   logs.set(number, []);
