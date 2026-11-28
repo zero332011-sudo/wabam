@@ -11,7 +11,7 @@ const pairingChats = new Map();
 let pairingNotifier = async () => {};
 let activeConfig = null;
 
-function digits(value) { return String(value || '').replace(/\\D/g, ''); }
+function digits(value) { return String(value || '').replace(/\D/g, ''); }
 function storePath(config = activeConfig) {
   if (!config) throw new Error('إعدادات WABAM غير جاهزة.');
   return path.resolve(config.dataDir, 'whatsapp', 'instances.json');
@@ -34,13 +34,13 @@ export function configureWhatsApp(config) { activeConfig = config; }
 export function setPairingNotifier(fn) { pairingNotifier = fn; }
 
 function logLine(number, line) {
-  const value = String(line).replace(/\\x1b\\[[0-9;]*m/g, '').slice(0, 1600);
+  const value = String(line).replace(/\x1b\[[0-9;]*m/g, '').slice(0, 1600);
   const list = logs.get(number) || [];
   list.push(value);
   if (list.length > 40) list.shift();
   logs.set(number, list);
   console.log('[WhatsApp ' + number + ']', value);
-  const match = value.match(/رمز ربط واتساب:\\s*([A-Z0-9-]+)/i);
+  const match = value.match(/رمز ربط واتساب:\s*([A-Z0-9-]+)/i);
   const chatId = pairingChats.get(number);
   if (match && chatId) pairingNotifier(chatId, match[1], number).catch(err => console.error(err));
 }
@@ -49,7 +49,7 @@ function pipeLines(number, stream) {
   stream.setEncoding('utf8');
   stream.on('data', chunk => {
     pending += chunk;
-    const lines = pending.split(/\\r?\\n/);
+    const lines = pending.split(/\r?\n/);
     pending = lines.pop() || '';
     lines.forEach(line => logLine(number, line));
   });
@@ -119,7 +119,13 @@ export function listWhatsAppInstances(config = activeConfig) {
   }));
 }
 export function getPrimaryNumber(config = activeConfig) { return readStore(config).primaryNumber; }
-export async function restoreWhatsApp(config = activeConfig) {\n  activeConfig = config;\n  const store = readStore(config);\n  for (const number of Object.keys(store.instances)) await spawnOne(number, config);\n  return Object.keys(store.instances).length;\n}\nexport async function startWhatsApp(number, chatId, config = activeConfig) {
+export async function restoreWhatsApp(config = activeConfig) {
+  activeConfig = config;
+  const store = readStore(config);
+  for (const number of Object.keys(store.instances)) await spawnOne(number, config);
+  return Object.keys(store.instances).length;
+}
+export async function startWhatsApp(number, chatId, config = activeConfig) {
   activeConfig = config;
   const value = digits(number);
   if (value.length < 10 || value.length > 15) throw new Error('رقم غير صحيح. أرسله مع مفتاح الدولة.');
