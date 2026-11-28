@@ -19,6 +19,8 @@ function cairoDateKey(date = new Date()) {
   return `${p.year}-${p.month}-${p.day}`;
 }
 
+const primaryLine = () => process.env.PRIMARY_BOT_NUMBER ? `\\n\\n⭐ الرقم الأساسي لـ WABAM: +${process.env.PRIMARY_BOT_NUMBER}\\n🔗 https://wa.me/${process.env.PRIMARY_BOT_NUMBER}` : '';
+
 const commandHub = name => [
   `🌌 ${name}`,
   '📋 القائمة الرئيسية',

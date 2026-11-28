@@ -2,9 +2,10 @@ import { Bot, InlineKeyboard } from 'grammy';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
-import { getStatus, getLogs, setPairingNotifier, startWhatsApp, stopWhatsApp, restartWhatsApp } from './process-manager.js';
+import { configureWhatsApp, getStatus, getLogs, getPrimaryNumber, listWhatsAppInstances, setPrimaryWhatsApp, setPairingNotifier, startWhatsApp, stopWhatsApp, restartWhatsApp } from './process-manager.js';
 
 const bot = new Bot(config.token);
+configureWhatsApp(config);
 const waitingForNumber = new Set();
 const pendingInput = new Map();
 const libraryFile = path.resolve(config.dataDir, 'shared', 'anime-library.json');
@@ -95,10 +96,18 @@ const adminKeyboard = () => new InlineKeyboard()
   .text('3️⃣ الإدارة العامة', 'admin:general').row()
   .text('↩️ القائمة الرئيسية', 'home');
 const whatsappKeyboard = () => new InlineKeyboard()
-  .text('📲 ربط / تشغيل', 'wa:pair').row()
+  .text('➕ ربط رقم واتساب', 'wa:pair').row()
+  .text('📱 الأرقام المرتبطة', 'wa:list').row()
+  .text('⭐ اختيار الرقم الأساسي', 'wa:primary:choose').row()
   .text('📊 الحالة', 'wa:status').text('📜 السجلات', 'wa:logs').row()
-  .text('⏹ إيقاف', 'wa:stop').text('🔄 إعادة تشغيل', 'wa:restart').row()
+  .text('⏹ إيقاف الكل', 'wa:stop').text('🔄 إعادة تشغيل الكل', 'wa:restart').row()
   .text('↩️ لوحة الإدارة', 'admin:home');
+const whatsappNumbersKeyboard = (items, prefix = 'wa:primary:set:') => {
+  const kb = new InlineKeyboard();
+  for (const item of items) kb.text((item.primary ? '⭐ ' : '📱 ') + '+' + item.number + (item.running ? ' 🟢' : ' ⚪'), prefix + item.number).row();
+  kb.text('↩️ إدارة واتساب', 'admin:whatsapp');
+  return kb;
+};
 const animeAdminKeyboard = () => new InlineKeyboard()
   .text('➕ إضافة أنمي', 'anime:add').row()
   .text('📁 إضافة قسم', 'anime:section').row()
@@ -275,8 +284,8 @@ async function handleAdminMedia(ctx) {
   return false;
 }
 
-setPairingNotifier(async (chatId, code) => {
-  await bot.api.sendMessage(chatId, '🔐 رمز ربط واتساب:\n\n' + code + '\n\nافتح واتساب ← الأجهزة المرتبطة ← ربط جهاز ← الربط باستخدام رقم الهاتف. أدخل الرمز كما هو. لا تشاركه مع أحد.');
+setPairingNotifier(async (chatId, code, number) => {
+  await bot.api.sendMessage(chatId, '🔐 رمز ربط الرقم +' + number + ':\n\n' + code + '\n\nافتح واتساب ← الأجهزة المرتبطة ← ربط جهاز ← الربط باستخدام رقم الهاتف. أدخل الرمز كما هو. لا تشاركه مع أحد.');
 });
 
 bot.command(['start', 'help'], showHome);
@@ -399,6 +408,29 @@ bot.callbackQuery('anime:skip-section-photo', async ctx => {
 
 bot.callbackQuery('anime:delete', async ctx => { await ctx.answerCallbackQuery(); await requestInput(ctx, 'delete', '🗑️ أرسل اسم الأنمي المراد حذفه.'); });
 
+bot.callbackQuery('wa:list', async ctx => {
+  if (!ownerOnly(ctx)) return ownerDeny(ctx);
+  await ctx.answerCallbackQuery();
+  const items = listWhatsAppInstances(config);
+  const primary = getPrimaryNumber(config);
+  const lines = items.map(x => (x.primary ? '⭐ الأساسي' : '📱 توجيهي') + ' — +' + x.number + ' — ' + (x.running ? '🟢 يعمل' : '⚪ متوقف'));
+  await ctx.reply('📱 الأرقام المرتبطة\n\n' + (lines.join('\n') || 'لا توجد أرقام مرتبطة بعد.') + (primary ? '\n\n⭐ الرقم الأساسي الحالي: +' + primary : ''), { reply_markup: whatsappKeyboard() });
+});
+bot.callbackQuery('wa:primary:choose', async ctx => {
+  if (!ownerOnly(ctx)) return ownerDeny(ctx);
+  await ctx.answerCallbackQuery();
+  const items = listWhatsAppInstances(config);
+  if (!items.length) return ctx.reply('اربط رقم واتساب أولًا.', { reply_markup: whatsappKeyboard() });
+  await ctx.reply('⭐ اختر الرقم الذي تريد تعيينه أساسيًا. سيتم تحويل باقي الأرقام إلى أرقام توجيهية:', { reply_markup: whatsappNumbersKeyboard(items) });
+});
+bot.callbackQuery(/^wa:primary:set:(\d{10,15})$/, async ctx => {
+  if (!ownerOnly(ctx)) return ownerDeny(ctx);
+  await ctx.answerCallbackQuery();
+  try {
+    await setPrimaryWhatsApp(ctx.match[1], config);
+    await ctx.reply('✅ تم تغيير الرقم الأساسي إلى: +' + ctx.match[1] + '\nباقي الأرقام أصبحت توجيهية، وتم طلب إعادة تشغيل الجلسات بالأدوار الجديدة.', { reply_markup: whatsappKeyboard() });
+  } catch (error) { await ctx.reply('❌ ' + error.message, { reply_markup: whatsappKeyboard() }); }
+});
 bot.callbackQuery('wa:pair', async ctx => {
   if (!ownerOnly(ctx)) return ownerDeny(ctx);
   await ctx.answerCallbackQuery();
@@ -409,24 +441,25 @@ bot.callbackQuery('wa:status', async ctx => {
   if (!ownerOnly(ctx)) return ownerDeny(ctx);
   await ctx.answerCallbackQuery();
   const s = getStatus();
-  await ctx.reply('📊 حالة واتساب: ' + (s.running ? 'يعمل' : 'متوقف') + '\n📱 الرقم: ' + (s.number || 'غير محدد') + '\n🆔 PID: ' + (s.pid || '—'), { reply_markup: whatsappKeyboard() });
+  const rows = s.instances.map(x => (x.primary ? '⭐ أساسي' : '📱 توجيهي') + ' — +' + x.number + ' — ' + (x.running ? '🟢 يعمل' : '⚪ متوقف'));
+  await ctx.reply('📊 حالة أرقام واتساب\n\n' + (rows.join('\n') || 'لا توجد أرقام مرتبطة بعد.'), { reply_markup: whatsappKeyboard() });
 });
 bot.callbackQuery('wa:logs', async ctx => {
   if (!ownerOnly(ctx)) return ownerDeny(ctx);
   await ctx.answerCallbackQuery();
   const lines = getLogs();
-  await ctx.reply('📜 آخر السجلات:\n\n' + (lines.length ? lines.join('\n') : 'لا توجد سجلات.'), { reply_markup: whatsappKeyboard() });
+  await ctx.reply('📜 آخر سجلات جميع الأرقام:\n\n' + (lines.length ? lines.join('\n') : 'لا توجد سجلات.'), { reply_markup: whatsappKeyboard() });
 });
 bot.callbackQuery('wa:restart', async ctx => {
   if (!ownerOnly(ctx)) return ownerDeny(ctx);
   await ctx.answerCallbackQuery();
-  try { await restartWhatsApp(config); await ctx.reply('🔄 تم طلب إعادة تشغيل بوت واتساب.'); }
+  try { const count = await restartWhatsApp(config); await ctx.reply('🔄 تم طلب إعادة تشغيل ' + count + ' رقم واتساب.'); }
   catch (err) { await ctx.reply('❌ ' + err.message); }
 });
 bot.callbackQuery('wa:stop', async ctx => {
   if (!ownerOnly(ctx)) return ownerDeny(ctx);
   await ctx.answerCallbackQuery();
-  await ctx.reply(stopWhatsApp() ? '⏹ تم إرسال طلب الإيقاف.' : 'ℹ️ البوت متوقف بالفعل.', { reply_markup: whatsappKeyboard() });
+  await ctx.reply(await stopWhatsApp() ? '⏹ تم إيقاف جميع أرقام واتساب.' : 'ℹ️ لا توجد أرقام تعمل حاليًا.', { reply_markup: whatsappKeyboard() });
 });
 
 bot.on('message', async ctx => {
