@@ -86,8 +86,6 @@ async function sendTelegramMedia(ctx, media, caption) {
 const ownerOnly = ctx => ctx.from?.id === config.ownerId;
 const mainKeyboard = () => new InlineKeyboard()
   .text('🍥 مكتبة الأنمي', 'library:home').row()
-  .url('💻 منصة كيريو', 'https://me-portal.qureo.education/login').row()
-  .text('📘 مساعدة الدروس والمراجعة', 'qureo:help').row()
   .text('⚙️ لوحة الإدارة', 'admin:home');
 const adminKeyboard = () => new InlineKeyboard()
   .text('1️⃣ إدارة الأنمي', 'admin:anime').row()
@@ -298,20 +296,6 @@ bot.command('cancel', async ctx => {
 
 bot.callbackQuery('home', async ctx => { await ctx.answerCallbackQuery(); await showHome(ctx); });
 bot.callbackQuery('library:home', async ctx => { await ctx.answerCallbackQuery(); await showLibrary(ctx); });
-bot.callbackQuery('qureo:help', async ctx => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply(
-    '💻 مساعدة كيريو — برمجة الصف الأول الثانوي\\n\\n' +
-    '1️⃣ افتح منصة كيريو من زر «منصة كيريو» وسجّل الدخول بنفسك داخل الموقع الرسمي.\\n' +
-    '2️⃣ لا ترسل كلمة المرور أو رمز الدخول للبوت أو لأي شخص.\\n' +
-    '3️⃣ أقدر أشرح لك أسئلة JavaScript وHTML وCSS وأراجع إجاباتك خطوة بخطوة هنا.\\n' +
-    '⚠️ البوت لا يدخل حسابك ولا ينفذ الدروس أو يرسل إجابات التقييمات نيابةً عنك.',
-    { reply_markup: new InlineKeyboard()
-      .url('🔐 فتح منصة كيريو الرسمية', 'https://me-portal.qureo.education/login')
-      .row()
-      .text('↩️ القائمة الرئيسية', 'home') }
-  );
-});
 bot.callbackQuery(/^lib:a:(\d+)$/, async ctx => { await ctx.answerCallbackQuery(); await showAnime(ctx, Number(ctx.match[1])); });
 bot.callbackQuery(/^lib:s:(\d+):(\d+)$/, async ctx => { await ctx.answerCallbackQuery(); await showSection(ctx, Number(ctx.match[1]), Number(ctx.match[2])); });
 bot.callbackQuery(/^lib:e:(\d+):(\d+):(\d+)$/, async ctx => {
