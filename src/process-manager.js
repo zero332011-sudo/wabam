@@ -55,7 +55,7 @@ function pipeLines(number, stream) {
   });
   stream.on('end', () => { if (pending) logLine(number, pending); });
 }
-function isRunning(child) { return Boolean(child && child.exitCode === null && !child.killed); }
+function isRunning(child) { return Boolean(child && child.exitCode === null); }
 async function stopOne(number) {
   const child = children.get(number);
   if (!isRunning(child)) { children.delete(number); return; }
